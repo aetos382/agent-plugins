@@ -38,7 +38,7 @@ Claude Code のプラグインを配布するマーケットプレイス。
 
 - プラグインやマーケットプレイスの構成要素を変更したら `claude plugin validate --strict` で検証する。マーケットプレイスはリポジトリのルートを、プラグインは `plugins/<name>` を渡す。
 - シェル スクリプトを変更したら `shellcheck` を実行する。
-- プル リクエストを出す前には `/pr-review-toolkit:review-pr` でレビューする。
+- プル リクエストを出す前には、`/review-pr-isolated` で `/pr-review-toolkit:review-pr` によるレビューを開発とは別のセッションで実行する。
 
 ## ドキュメント
 
