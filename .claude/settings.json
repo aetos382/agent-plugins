@@ -1,10 +1,21 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(claude plugin validate *)",
+      "Bash(shellcheck *)"
+    ],
+    "deny": [
+      "Edit(**/*-lock.json)"
+    ]
+  },
   "enabledPlugins": {
     "commit-commands@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": true,
     "pr-review-toolkit@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "plugin-dev@claude-plugins-official": true
+    "plugin-dev@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
