@@ -13,6 +13,9 @@
     "ghcr.io/aetos382/devcontainer-features/apt-mirror:1": {
       "mirror": "https://ftp.udx.icscoe.jp/Linux/ubuntu/"
     },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": false
+    },
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/node:2": {
       "nodeGypDependencies": false

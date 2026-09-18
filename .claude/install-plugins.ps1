@@ -10,7 +10,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # settings.json の extraKnownMarketplaces に書いた source から、
-# claude plugin marketplace add に渡す引数を組み立てる。
+# claude plugin marketplace add に渡す source と scope を組み立てる。
 #
 # StrictMode 下では未定義のキーを読んだ時点で落ちるが、そのメッセージにはどの marketplace が
 # 悪いのかが出ない。settings.json の書き間違いを直せるようにするため、必要なキーは
@@ -34,7 +34,7 @@ function Get-MarketplaceSource {
                 throw "Marketplace has no repo: $Name"
             }
 
-            return $Source.repo
+            return @{ Scope = 'project'; Source = $Source.repo }
         }
 
         'git' {
@@ -46,10 +46,23 @@ function Get-MarketplaceSource {
             # Claude Code はこれを source: git の url と ref に分けて記録するので、
             # settings.json には分かれた形で書き、ここで元の形に戻す。
             if ($Source.ContainsKey('ref')) {
-                return "$($Source.url)#$($Source.ref)"
+                return @{ Scope = 'project'; Source = "$($Source.url)#$($Source.ref)" }
             }
 
-            return $Source.url
+            return @{ Scope = 'project'; Source = $Source.url }
+        }
+
+        'directory' {
+            if (-not $Source.ContainsKey('path')) {
+                throw "Marketplace has no path: $Name"
+            }
+
+            # このリポジトリ自身の marketplace を登録できるよう、settings.json にはリポジトリのルートからの
+            # 相対パスを書く。marketplace add は渡したパスを絶対パスにして書き込むので、project スコープで
+            # 追加すると settings.json の相対パスがこの環境の絶対パスで上書きされてしまう。
+            # そこで、git 管理外の settings.local.json に書き込む local スコープで追加する。
+            # 相対パスは、リポジトリのルートに移動した後で解決する。
+            return @{ Scope = 'local'; Source = (Resolve-Path -LiteralPath $Source.path).ProviderPath }
         }
 
         default {
@@ -62,7 +75,7 @@ function Get-MarketplaceSource {
 $settingsFile = Join-Path $PSScriptRoot 'settings.json'
 $settings = Get-Content -LiteralPath $settingsFile -Raw | ConvertFrom-Json -AsHashtable
 
-# marketplace add --scope project はカレント ディレクトリのプロジェクトに書き込むため、
+# marketplace add の project / local スコープはカレント ディレクトリのプロジェクトに書き込むため、
 # どこから実行されてもリポジトリのルートで動かす。
 Push-Location (Split-Path -Parent $PSScriptRoot)
 try {
@@ -87,7 +100,7 @@ try {
     }
 
     foreach ($name in $sources.Keys) {
-        claude plugin marketplace add --scope project $sources[$name]
+        claude plugin marketplace add --scope $sources[$name].Scope $sources[$name].Source
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to add marketplace: $name (exit code $LASTEXITCODE)"
         }

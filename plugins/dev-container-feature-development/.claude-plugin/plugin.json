@@ -1,0 +1,11 @@
+{
+  "name": "dev-container-feature-development",
+  "version": "0.1.0",
+  "description": "Skills for authoring, testing, and releasing Dev Container Features.",
+  "author": {
+    "name": "aetos382"
+  },
+  "repository": "https://github.com/aetos382/agent-plugins",
+  "license": "MIT",
+  "keywords": ["devcontainer", "dev-container-features"]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "aetos382",
+  "owner": {
+    "name": "aetos382"
+  },
+  "description": "Claude Code plugins by aetos382.",
+  "plugins": [
+    {
+      "name": "dev-container-feature-development",
+      "source": "./plugins/dev-container-feature-development",
+      "description": "Skills for authoring, testing, and releasing Dev Container Features."
+    }
+  ]
+}

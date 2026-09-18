@@ -20,6 +20,11 @@
       "resolved": "ghcr.io/aetos382/devcontainer-features/timezone@sha256:c8308b4c4ca620003c1fc4e98586aab64998655186a5092326088719ef889aad",
       "integrity": "sha256:c8308b4c4ca620003c1fc4e98586aab64998655186a5092326088719ef889aad"
     },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "2.17.0",
+      "resolved": "ghcr.io/devcontainers/features/docker-in-docker@sha256:25b9f05705ffba7dbe503230ac76081419306f8c8bc88e0ce78c4ecd99a0c78c",
+      "integrity": "sha256:25b9f05705ffba7dbe503230ac76081419306f8c8bc88e0ce78c4ecd99a0c78c"
+    },
     "ghcr.io/devcontainers/features/github-cli:1": {
       "version": "1.1.2",
       "resolved": "ghcr.io/devcontainers/features/github-cli@sha256:7c409bf6316ffd85f04fd92fba85a744282639e603417dd4796409866bdb6805",

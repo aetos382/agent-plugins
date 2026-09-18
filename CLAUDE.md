@@ -4,7 +4,7 @@
 
 Claude Code のプラグインを配布するマーケットプレイス。
 
-- `.claude-plugin/marketplace.json`: マーケットプレイスの定義。プラグインを追加したら、ここに登録する（ファイルがなければ作成する）。
+- `.claude-plugin/marketplace.json`: マーケットプレイスの定義。プラグインを追加したら、ここに登録する。
 - `plugins/<name>/`: 各プラグイン。マニフェストは `plugins/<name>/.claude-plugin/plugin.json`。
 - プラグイン固有の開発方針は `.claude/rules/<name>.md` に `paths` 付きで書く。`plugins/<name>/` 以下は丸ごと配布されるため、そこに `CLAUDE.md` を置かない。
 
@@ -13,6 +13,8 @@ Claude Code のプラグインを配布するマーケットプレイス。
 - 最新版の Claude Code をターゲットとし、古いバージョンとの互換性は考慮しない。
 - 他エージェントや [Agent Plugins](https://agent-plugins.org/) への対応は、実装の大部分を共有できる場合のみ考慮する。
 - プラグインの機能は Claude Code 向けをフルセットとし、他エージェント向けはサブセットとする。他エージェント専用の機能は設けない。
+- 参考：[acplugin](https://github.com/tokenRollAI/acplugin)：Claude Code プラグインを他エージェント向けに変換するツール
+- 参考：[migrate-agent-plugin](https://github.com/agentplugins/agent-plugins-example/tree/main/skills/migrate-agent-plugin)：他エージェント向けプラグインを Agent Plugin 仕様に変換するプラグイン。ただし [Agent Plugin 1.0 仕様](https://github.com/agentplugins/agent-plugins-spec)は非常に貧弱であることに留意すること。
 
 ## 対象環境
 
@@ -50,3 +52,8 @@ Claude Code のプラグインを配布するマーケットプレイス。
 
 - `main` ブランチにはコミットしない。機能開発は適当なトピック ブランチで行う。
 - コミット メッセージやプル リクエストのサマリーは日本語で書く。
+
+## `devcontainer-lock.json` の更新
+
+- `.devcontainer/devcontainer-lock.json` の最終更新日から一週間以上が経過していたら、`devcontainer upgrade` コマンドで更新する。
+- 更新後はファイルの最終更新日が更新されていることを確認する。

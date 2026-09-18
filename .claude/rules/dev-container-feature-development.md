@@ -28,6 +28,10 @@ Feature に含まれるスクリプトについて。
 - テストは必須サポート対象のディストリビューションで行う。その他のディストリビューションではテストしていないことを `src/<feature>/NOTES.md` に明記する。
 - [nanolayer](https://github.com/devcontainers-extra/nanolayer) は使わない。
 
+## 参考実装
+
+- `aetos382/devcontainer-features` は初期のサンプルとして参照してよいが、規範ではない。このプラグインの方針と食い違う場合はこのプラグインが正であり、devcontainer-features 側を合わせる。
+
 ## 参考資料
 
 - [Dev Container Features reference](https://containers.dev/implementors/features/)
