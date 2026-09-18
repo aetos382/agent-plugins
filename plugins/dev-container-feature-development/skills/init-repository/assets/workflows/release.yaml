@@ -1,0 +1,59 @@
+name: "Release dev container features & Generate Documentation"
+on:
+  workflow_dispatch:
+
+# Two releases at once would race to move the same major, minor, and latest tags.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # workflow_dispatch can be started on any branch from the Actions page. Publishing from anything
+    # but the default branch would release unreviewed code and move the latest tags to it.
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: write
+    steps:
+      - uses: actions/checkout@__CHECKOUT_REF__
+
+      - name: "Publish Features"
+        uses: devcontainers/action@__DEVCONTAINERS_ACTION_REF__
+        with:
+          publish-features: "true"
+          base-path-to-features: "./src"
+          generate-docs: "true"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Requires the repository setting "Allow GitHub Actions to create and approve pull requests"
+      # (Settings > Actions > General > Workflow permissions); otherwise gh pr create fails.
+      - name: "Create PR for Documentation"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git config --global user.name 'github-actions[bot]'
+          branch="automated-documentation-update-${GITHUB_RUN_ID}"
+          git checkout -b "${branch}"
+          message='Automated documentation update'
+          # git add fails on a pattern that matches nothing, so the list is built with nullglob first.
+          shopt -s nullglob
+          readmes=(src/*/README.md)
+          if [ "${#readmes[@]}" -gt 0 ]; then
+            git add -- "${readmes[@]}"
+          fi
+          if git diff --cached --quiet; then
+            echo 'No documentation updates.'
+          else
+            # Do not add "[skip ci]": a branch ruleset that requires the test workflows would never be
+            # satisfied. Events caused by GITHUB_TOKEN do not start workflow runs either, so a user has
+            # to close and reopen the pull request below before its checks are reported.
+            git commit -m "${message}"
+            git push origin "${branch}"
+            gh pr create --title "${message}" --body "${message}"
+          fi
