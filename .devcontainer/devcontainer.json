@@ -13,9 +13,6 @@
     "ghcr.io/aetos382/devcontainer-features/apt-mirror:1": {
       "mirror": "https://ftp.udx.icscoe.jp/Linux/ubuntu/"
     },
-    "ghcr.io/devcontainers/features/dotnet:2": {
-      "version": "10.0.400"
-    },
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/node:2": {
       "nodeGypDependencies": false
