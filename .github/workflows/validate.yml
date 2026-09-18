@@ -55,6 +55,17 @@ jobs:
           printf 'Checking %s\n' "${files[@]}"
           shellcheck -- "${files[@]}"
 
+  # Release numbers and image names in dev-container-feature-development must agree with its source
+  # of truth. Whether that source is current upstream is checked weekly by check-distributions.yml,
+  # not here, so that a new upstream release does not fail unrelated pull requests.
+  distributions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: "Check supported distributions for consistency"
+        run: bash .github/scripts/check-supported-distributions.sh consistency
+
   # Aggregates the jobs above into a single check with a stable name, so that a branch ruleset can
   # require it without being updated whenever a job is added or renamed here.
   validation-passed:
@@ -63,8 +74,10 @@ jobs:
     needs:
       - plugin-validate
       - shellcheck
+      - distributions
     steps:
       - name: "Check the results of the validation jobs"
         run: |
           test '${{ needs.plugin-validate.result }}' = success \
-            && test '${{ needs.shellcheck.result }}' = success
+            && test '${{ needs.shellcheck.result }}' = success \
+            && test '${{ needs.distributions.result }}' = success
