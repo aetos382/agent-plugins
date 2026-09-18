@@ -39,7 +39,8 @@
         "GitHub.vscode-pull-request-github",
         "ms-vscode.powershell",
         "timonwong.shellcheck",
-        "-dbaeumer.vscode-eslint"
+        "-dbaeumer.vscode-eslint",
+        "-ms-azuretools.vscode-containers"
       ],
       "settings": {
         "files.eol": "\n",
