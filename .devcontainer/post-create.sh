@@ -17,5 +17,3 @@ fi
 # .claude/settings.json に書かれている marketplace / plugin をプロジェクト スコープで
 # インストールする。ローカル（Windows を含む）でも同じ処理を使うので、本体は PowerShell で書いてある。
 pwsh -NoProfile -File .claude/install-plugins.ps1
-
-dotnet restore Logora.slnx
