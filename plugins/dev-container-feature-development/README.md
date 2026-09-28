@@ -8,7 +8,7 @@ A Claude Code plugin for authoring, testing, and releasing [Dev Container Featur
 
 | Skill | What it does |
 |---|---|
-| `/dev-container-feature-development:init-repository` | Creates or updates the test, release, and validate workflows, Dependabot configuration, dev container, README, and `.gitattributes`. Works on new and existing repositories, and lists the GitHub settings to change by hand. |
+| `/dev-container-feature-development:init-repository` | Creates or updates the test, release, and validate workflows, Dependabot or Renovate configuration, dev container, README, and `.gitattributes`. Works on new and existing repositories, and lists the GitHub settings to change by hand. |
 | `/dev-container-feature-development:new-feature [id] [what it installs]` | Researches the upstream, asks about the design, implements `install.sh` with its tests, runs them, and has the result reviewed. |
 | `/dev-container-feature-development:run-feature-tests [id ...]` | Runs the tests on every supported base image and all scenarios, executes the manual negative tests, and analyzes failures. Uses CI results when Docker is unavailable. |
 | `/dev-container-feature-development:release [id ...]` | Finds Features with unreleased changes, bumps versions through a pull request, runs the release workflow, and verifies the published tags. |

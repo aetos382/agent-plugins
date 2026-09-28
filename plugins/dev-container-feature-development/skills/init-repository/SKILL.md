@@ -21,9 +21,18 @@ Reply to the user in the language they use. This skill writes files in the worki
    | Release | uses `devcontainers/action` with `publish-features: "true"` |
    | Validate | uses `devcontainers/action` with `validate-only: "true"`, or runs `shellcheck` |
 
-   Also check `src/*/devcontainer-feature.json`, `test/*/`, `.github/dependabot.yml`, `.devcontainer/devcontainer.json`, `README.md`, `LICENSE`, and `.gitattributes`.
+   Also check `src/*/devcontainer-feature.json`, `test/*/`, `.devcontainer/devcontainer.json`, `README.md`, `LICENSE`, and `.gitattributes`.
+4. Record how dependencies are updated: `.github/dependabot.yml`, and a Renovate configuration in any of the locations Renovate reads (`renovate.json`, `renovate.json5`, `.github/renovate.json`, `.github/renovate.json5`, `.gitlab/renovate.json`, `.gitlab/renovate.json5`, `.renovaterc`, `.renovaterc.json`, `.renovaterc.json5`, or a `renovate` key in `package.json`).
 
-## 2. Resolve template values
+## 2. Choose the dependency updater
+
+Dependabot or Renovate keeps the pinned actions and the dev container's Features up to date. Decide which one in this order, and stop at the first rule that applies:
+
+1. **The repository already uses one.** Keep it and do not add the other. A `dependabot.yml` that covers only the `devcontainers` ecosystem next to a Renovate configuration counts as Renovate.
+2. **The user's instructions name one**, for example in `CLAUDE.md` or memory. Follow them, including any shared Renovate preset they name.
+3. **Otherwise, ask** with `AskUserQuestion`. Recommend Dependabot: it is built into GitHub and needs no app installation. Offer Renovate for users who already run it elsewhere.
+
+## 3. Resolve template values
 
 The templates in `assets/` contain placeholders. Resolve them now; never leave a placeholder in a written file.
 
@@ -53,7 +62,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/release/scripts/published-tags.sh" --max-semv
 
 and take the part before the first dot.
 
-## 3. Plan
+## 4. Plan
 
 Map each template to its destination:
 
@@ -62,10 +71,19 @@ Map each template to its destination:
 | `assets/workflows/test.yaml` | `.github/workflows/test.yaml` |
 | `assets/workflows/release.yaml` | `.github/workflows/release.yaml` |
 | `assets/workflows/validate.yaml` | `.github/workflows/validate.yaml` |
-| `assets/dependabot.yml` | `.github/dependabot.yml` |
 | `assets/devcontainer/devcontainer.json` | `.devcontainer/devcontainer.json` |
 | `assets/README.md` | `README.md` |
 | `assets/gitattributes` | `.gitattributes` |
+
+Add the templates for the chosen dependency updater:
+
+| Updater | Template | Destination |
+|---|---|---|
+| Dependabot | `assets/dependabot.yml` | `.github/dependabot.yml` |
+| Renovate | `assets/renovate.json` | `renovate.json` |
+| Renovate | `assets/dependabot-devcontainers.yml` | `.github/dependabot.yml` |
+
+With Renovate, Dependabot still updates the dev container's Features. Renovate cannot update `devcontainer-lock.json`, so `renovate.json` disables its `devcontainer` manager and leaves that ecosystem to Dependabot; without the Dependabot file, nothing would update the Features. When the user named a shared Renovate preset, extend it in `renovate.json` instead of `config:recommended`, and keep only the settings the preset does not already provide.
 
 Also create empty `src/` and `test/` directories only when the user will add a Feature right away; Git does not track empty directories.
 
@@ -77,6 +95,7 @@ For each destination, decide:
   - Release workflow: publishing with `generate-docs`, followed by the documentation pull request step; runs only on the default branch, one at a time.
   - Validate workflow: `validate-only` and ShellCheck over `git ls-files '*.sh'`, with the `validation-passed` aggregate job.
   - Actions pinned to commit SHAs with the tag in a comment.
+  - Dependency updates: GitHub Actions and the dev container's Features are both covered. With an existing Renovate configuration, check what it covers instead of rewriting it, and propose only the missing pieces.
 - **Keep** when the existing file already satisfies the template.
 
 `README.md` in an existing repository: add only what is missing, typically the Features table. Fill the table with one row per Feature, using `name` or `id` linked to `src/<id>` and `description` from its `devcontainer-feature.json`.
@@ -85,7 +104,7 @@ When `LICENSE` is missing, ask which license to use; the Features' `licenseURL` 
 
 Present the plan as a table (destination, action, summary of changes) and wait for the user's approval. Show the full diff for every updated file before writing it.
 
-## 4. Apply
+## 5. Apply
 
 Write the approved files. Then check them:
 
@@ -93,7 +112,7 @@ Write the approved files. Then check them:
 - `actionlint` on the workflows, when it is installed.
 - For existing Features, confirm that each `test/<id>/test.sh` exists, since the discovered matrix now tests every Feature under `src/`. List any that are missing and offer the `feature-testing` skill.
 
-## 5. Hand over the manual steps
+## 6. Hand over the manual steps
 
 These need repository admin rights or are deliberately left to the user. Present them as a checklist, filling in the owner and repository:
 
@@ -113,7 +132,8 @@ These need repository admin rights or are deliberately left to the user. Present
    ```
 
    The `release` skill detects these rules and then does not ask a second time in chat.
-4. **Codespaces**: when creating a Codespace, approve the requested Actions write permission, which `gh workflow run` needs.
-5. **After the first release**: ghcr.io creates packages private. Make each one public at `https://github.com/<users|orgs>/<owner>/packages/container/<repo>%2F<id>/settings` (with a custom `features-namespace`, the package name is the namespace without the owner, then `/<id>`). The `release` skill reminds about this too.
+4. **Renovate** (only when Renovate was chosen): install the [Renovate GitHub App](https://github.com/apps/renovate) for the repository. Renovate opens pull requests for vulnerable dependencies from Dependabot alerts, so in Settings → Advanced Security enable Dependabot alerts and disable Dependabot security updates; otherwise both open a pull request for the same fix.
+5. **Codespaces**: when creating a Codespace, approve the requested Actions write permission, which `gh workflow run` needs.
+6. **After the first release**: ghcr.io creates packages private. Make each one public at `https://github.com/<users|orgs>/<owner>/packages/container/<repo>%2F<id>/settings` (with a custom `features-namespace`, the package name is the namespace without the owner, then `/<id>`). The `release` skill reminds about this too.
 
 Finally, suggest committing the changes on a topic branch and opening a pull request, and offer the `new-feature` skill when `src/` is empty.
