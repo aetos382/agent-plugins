@@ -3,6 +3,8 @@
 # so a binary installed with a restrictive mode or into a directory only on root's PATH would pass
 # every test that runs as root and still be unusable in a typical dev container.
 #
+# The command strings passed to 'bash -c' are single-quoted so that '$' reaches the nested shell
+# unexpanded, which is what SC2016 warns about.
 # shellcheck disable=SC2016
 set -e
 

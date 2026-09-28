@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Checks that every release number and image name in the dev-container-feature-development plugin
-# agrees with its source of truth, skills/feature-authoring/references/supported-distributions.md.
+# and its development rules (.claude/rules) agrees with its source of truth,
+# skills/feature-authoring/references/supported-distributions.md.
 # Needs no network access; run on every pull request.
 #
 # Usage: check-supported-distributions.sh

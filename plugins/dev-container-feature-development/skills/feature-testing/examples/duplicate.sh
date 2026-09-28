@@ -5,6 +5,8 @@
 #
 # The CLI exposes the second installation's options as VERSION and the defaults as VERSION__DEFAULT.
 #
+# The command strings passed to 'bash -c' are single-quoted so that '$' reaches the nested shell
+# unexpanded, which is what SC2016 warns about.
 # shellcheck disable=SC2016
 set -e
 
@@ -13,6 +15,6 @@ source 'dev-container-features-test-lib'
 
 check 'both option sets were passed in' bash -c '[ -n "${VERSION}" ] && [ -n "${VERSION__DEFAULT}" ]'
 check 'mytool runs after the second installation' mytool --version
-check 'exactly one mytool is on PATH' bash -c '[ "$(type -ap mytool | wc -l)" -eq 1 ]'
+check 'exactly one mytool is on PATH' bash -c 'set -o pipefail; [ "$(type -ap mytool | wc -l)" -eq 1 ]'
 
 reportResults

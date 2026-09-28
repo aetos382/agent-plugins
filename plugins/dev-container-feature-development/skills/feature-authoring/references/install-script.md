@@ -86,12 +86,19 @@ Map to whatever naming the upstream release uses, and list the supported archite
 
 ## Resolving "latest"
 
-Fetch into a variable first and parse second. Without `pipefail`, `curl ... | sed ...` hides a network failure as an empty result.
+First record whether the user named a version, before `latest` is resolved: only a version the user named is a promise the installed binary can be held to (see "Checking the installed version"). Both lookups below assume this block.
 
 ```sh
 VERSION_PINNED='1'
 if [ "${VERSION}" = 'latest' ]; then
   VERSION_PINNED=''
+fi
+```
+
+Fetch into a variable first and parse second. Without `pipefail`, `curl ... | sed ...` hides a network failure as an empty result.
+
+```sh
+if [ "${VERSION}" = 'latest' ]; then
   if ! RESPONSE="$(curl -fsSL --retry 3 'https://api.github.com/repos/<owner>/<repo>/releases/latest')"; then
     echo "${FEATURE_ID}: could not query the latest release (see curl's message above)." >&2
     echo "${FEATURE_ID}: set the 'version' option to an exact version to skip this lookup." >&2

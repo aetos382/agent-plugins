@@ -20,6 +20,8 @@ Tests live in `test/<id>/`, mirroring `src/<id>/`. They run with `devcontainer f
 
 `test.sh` is mandatory for every Feature: the auto-generated run fails without it.
 
+Make every test script executable, following the rule in the `new-feature` skill: `chmod +x`, then record the mode with `git add --chmod=+x <files>`, since Git does not pick up the bit on Windows or with `core.fileMode=false`. Tell the user that this stages the files.
+
 ## What to cover
 
 1. **Default options** (`test.sh`): the tool is on `PATH`, runs, is at the documented path with the documented owner and mode, and nothing is left behind that the Feature promises to clean up.

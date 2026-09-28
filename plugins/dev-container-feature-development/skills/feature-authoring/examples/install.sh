@@ -8,12 +8,12 @@ INSTALL_PATH='/usr/local/bin/mytool'
 REPOSITORY='example-org/mytool'
 
 # Option values reach install.sh as upper-cased environment variables.
-MYTOOL_VERSION="${VERSION:-latest}"
+VERSION="${VERSION:-latest}"
 
 # Recorded before 'latest' is resolved: only a version the user named is a promise the installed
 # binary can be held to.
 VERSION_PINNED='1'
-if [ "${MYTOOL_VERSION}" = 'latest' ]; then
+if [ "${VERSION}" = 'latest' ]; then
   VERSION_PINNED=''
 fi
 
@@ -27,6 +27,7 @@ case "$(uname -m)" in
   x86_64 | amd64) ARCH='amd64' ;;
   aarch64 | arm64) ARCH='arm64' ;;
   *)
+    # Covered by test/mytool/negative-tests.md, Case C.
     echo "${FEATURE_ID}: unsupported architecture '$(uname -m)'." >&2
     exit 1
     ;;
@@ -58,6 +59,7 @@ fi
 
 if [ -n "${MISSING_PACKAGES}" ]; then
   if ! command -v 'apt-get' >/dev/null 2>&1; then
+    # Covered by test/mytool/negative-tests.md, Case D.
     echo "${FEATURE_ID}: the following are required but missing, and apt-get is unavailable to install them:${MISSING_PACKAGES}" >&2
     echo "${FEATURE_ID}: install them in your base image, or use a Debian/Ubuntu-based image." >&2
     exit 1
@@ -69,7 +71,7 @@ if [ -n "${MISSING_PACKAGES}" ]; then
   rm -rf /var/lib/apt/lists/*
 fi
 
-if [ "${MYTOOL_VERSION}" = 'latest' ]; then
+if [ "${VERSION}" = 'latest' ]; then
   # The releases/latest page redirects to the newest tag. Following the redirect avoids the
   # unauthenticated API's rate limit, which shared CI runners exhaust quickly.
   if ! LATEST_URL="$(curl -fsSLI --retry 3 -o /dev/null -w '%{url_effective}' "https://github.com/${REPOSITORY}/releases/latest")"; then
@@ -80,20 +82,21 @@ if [ "${MYTOOL_VERSION}" = 'latest' ]; then
   # A repository without a non-prerelease release redirects to /releases instead of
   # /releases/tag/<tag>; the last path segment would then be taken for the version "releases".
   case "${LATEST_URL}" in
-    */releases/tag/*) MYTOOL_VERSION="${LATEST_URL##*/}" ;;
+    */releases/tag/*) VERSION="${LATEST_URL##*/}" ;;
     *)
       echo "${FEATURE_ID}: ${REPOSITORY} has no published release to resolve 'latest' to." >&2
       exit 1
       ;;
   esac
 fi
-MYTOOL_VERSION="${MYTOOL_VERSION#v}"
+VERSION="${VERSION#v}"
 
 # The version ends up in a URL and in a file path below. Checked after resolving 'latest' so that an
 # unexpected redirect target is caught too; rejecting '/' also rules out '..' path segments.
-case "${MYTOOL_VERSION}" in
+# The failure below is covered by test/mytool/negative-tests.md, Case A.
+case "${VERSION}" in
   '' | *[!0-9A-Za-z.+-]*)
-    echo "${FEATURE_ID}: invalid version '${MYTOOL_VERSION}'; expected something like 1.2.3." >&2
+    echo "${FEATURE_ID}: invalid version '${VERSION}'; expected something like 1.2.3." >&2
     exit 1
     ;;
 esac
@@ -108,12 +111,13 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-ARCHIVE="mytool_${MYTOOL_VERSION}_linux_${ARCH}.tar.gz"
-BASE_URL="https://github.com/${REPOSITORY}/releases/download/v${MYTOOL_VERSION}"
+ARCHIVE="mytool_${VERSION}_linux_${ARCH}.tar.gz"
+BASE_URL="https://github.com/${REPOSITORY}/releases/download/v${VERSION}"
 
 if ! curl -fsSL --retry 3 -o "${TMP_DIR}/${ARCHIVE}" "${BASE_URL}/${ARCHIVE}"; then
+  # Covered by test/mytool/negative-tests.md, Case B.
   echo "${FEATURE_ID}: failed to download ${ARCHIVE} (see curl's message above)." >&2
-  echo "${FEATURE_ID}: if that was a 404, version '${MYTOOL_VERSION}' may not be published for ${ARCH}." >&2
+  echo "${FEATURE_ID}: if that was a 404, version '${VERSION}' may not be published for ${ARCH}." >&2
   exit 1
 fi
 if ! curl -fsSL --retry 3 -o "${TMP_DIR}/checksums.txt" "${BASE_URL}/checksums.txt"; then
@@ -144,9 +148,9 @@ INSTALLED_VERSION="$("${TMP_DIR}/mytool" --version)"
 
 if [ -n "${VERSION_PINNED}" ]; then
   case "${INSTALLED_VERSION}" in
-    *"${MYTOOL_VERSION}"*) ;;
+    *"${VERSION}"*) ;;
     *)
-      echo "${FEATURE_ID}: ${ARCHIVE} reports '${INSTALLED_VERSION}', not the requested ${MYTOOL_VERSION}." >&2
+      echo "${FEATURE_ID}: ${ARCHIVE} reports '${INSTALLED_VERSION}', not the requested ${VERSION}." >&2
       exit 1
       ;;
   esac
@@ -154,4 +158,4 @@ fi
 
 install -o 'root' -g 'root' -m 755 "${TMP_DIR}/mytool" "${INSTALL_PATH}"
 
-echo "${FEATURE_ID}: installed mytool ${MYTOOL_VERSION} at ${INSTALL_PATH}"
+echo "${FEATURE_ID}: installed mytool ${VERSION} at ${INSTALL_PATH}"

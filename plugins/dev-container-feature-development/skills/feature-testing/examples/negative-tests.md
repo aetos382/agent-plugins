@@ -4,6 +4,8 @@
 
 ## Setup
 
+Start a fresh container for each case: some cases modify it (Case D disables `apt-get`), and others install packages before they fail.
+
 ```sh
 docker run --rm -it -v "$PWD/src/mytool:/mnt/f:ro" debian:12 sh
 ```
@@ -14,7 +16,7 @@ docker run --rm -it -v "$PWD/src/mytool:/mnt/f:ro" debian:12 sh
 VERSION='../1.2.3' sh /mnt/f/install.sh; echo "exit status: $?"
 ```
 
-Expected: exit status 1, before anything is downloaded, and `/usr/local/bin/mytool` does not exist.
+Expected: exit status 1, before the mytool archive is downloaded, and `/usr/local/bin/mytool` does not exist.
 
 ```
 mytool: invalid version '../1.2.3'; expected something like 1.2.3.
@@ -22,7 +24,7 @@ mytool: invalid version '../1.2.3'; expected something like 1.2.3.
 
 ## Case B: a version that was never released
 
-Requires an x86_64 host, since the expected message names the architecture.
+Requires an x86_64 host. The expected message names the architecture.
 
 ```sh
 VERSION=0.0.0-nonexistent sh /mnt/f/install.sh; echo "exit status: $?"
