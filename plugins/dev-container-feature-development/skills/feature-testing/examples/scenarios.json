@@ -1,0 +1,18 @@
+{
+  "pinned_version": {
+    "image": "debian:12",
+    "remoteUser": "root",
+    "features": {
+      "mytool": {
+        "version": "1.2.3"
+      }
+    }
+  },
+  "non_root_user": {
+    "image": "mcr.microsoft.com/devcontainers/base:3-ubuntu26.04",
+    "remoteUser": "vscode",
+    "features": {
+      "mytool": {}
+    }
+  }
+}

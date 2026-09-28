@@ -38,7 +38,7 @@ Claude Code のプラグインを配布するマーケットプレイス。
 
 - プラグインやマーケットプレイスの構成要素を変更したら `claude plugin validate --strict` で検証する。マーケットプレイスはリポジトリのルートを、プラグインは `plugins/<name>` を渡す。
 - シェル スクリプトを変更したら `shellcheck` を実行する。
-- プル リクエストを出す前には `/pr-review-toolkit:review-pr` でレビューする。
+- プル リクエストを出す前には、`/pr-review-toolkit:review-pr` でレビューを実行する。
 
 ## ドキュメント
 
@@ -57,3 +57,4 @@ Claude Code のプラグインを配布するマーケットプレイス。
 
 - `.devcontainer/devcontainer-lock.json` の最終更新日から一週間以上が経過していたら、`devcontainer upgrade` コマンドで更新する。
 - 更新後はファイルの最終更新日が更新されていることを確認する。
+- 末尾の改行だけの差分が出たら、その差分は採用せず、最新の CLI（`PATH` 上の `devcontainer`）で `devcontainer upgrade` をやり直した結果を正とする。Codespaces に同梱の古い CLI が、ビルド時に改行なしで書き出すことがあるため。

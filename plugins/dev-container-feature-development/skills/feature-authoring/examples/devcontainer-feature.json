@@ -1,0 +1,21 @@
+{
+  "id": "mytool",
+  "version": "1.0.0",
+  "name": "mytool",
+  "description": "Installs the mytool CLI from its GitHub release, with checksum verification.",
+  "documentationURL": "https://github.com/example-owner/devcontainer-features/tree/main/src/mytool",
+  "licenseURL": "https://github.com/example-owner/devcontainer-features/blob/main/LICENSE",
+  "options": {
+    "version": {
+      "type": "string",
+      "proposals": [
+        "latest"
+      ],
+      "default": "latest",
+      "description": "Version of mytool to install, such as '1.2.3', or 'latest'."
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ]
+}

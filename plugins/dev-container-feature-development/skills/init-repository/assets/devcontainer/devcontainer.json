@@ -1,0 +1,38 @@
+{
+  "name": "__REPO__",
+  "image": "mcr.microsoft.com/devcontainers/base:3-ubuntu26.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:__DIND_MAJOR__": {},
+    "ghcr.io/devcontainers/features/github-cli:__GITHUB_CLI_MAJOR__": {},
+    "ghcr.io/devcontainers/features/node:__NODE_MAJOR__": {}
+  },
+  "remoteUser": "vscode",
+  "updateContentCommand": "npm install -g @devcontainers/cli && sudo apt-get update && sudo apt-get install -y --no-install-recommends shellcheck",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "json.schemas": [
+          {
+            "fileMatch": [
+              "**/devcontainer-feature.json"
+            ],
+            "url": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainerFeature.schema.json"
+          }
+        ]
+      },
+      "extensions": [
+        "github.vscode-github-actions",
+        "timonwong.shellcheck"
+      ]
+    },
+    "codespaces": {
+      "repositories": {
+        "__OWNER_REPO__": {
+          "permissions": {
+            "actions": "write"
+          }
+        }
+      }
+    }
+  }
+}
