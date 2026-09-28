@@ -70,7 +70,14 @@ When `test/<id>/negative-tests.md` exists, execute every case in it. The file fo
    ```
 
 2. Confirm that the mount is visible: `docker exec "negtest-<id>-<case>" test -f /mnt/f/install.sh`. When it fails, the Docker daemon cannot see the working directory (typical with docker-outside-of-docker in a dev container). Report all negative tests as not run for that reason, and do not count them as failures.
-3. Run the case's commands with `docker exec "negtest-<id>-<case>" sh -c '<case commands>'`, capturing stdout, stderr, and the printed exit status.
+3. Run the case's commands, capturing stdout, stderr, and the printed exit status. Pass them through a quoted here-document, so that quotes in the commands (such as `VERSION='../1.2.3'`) reach the container unchanged:
+
+   ```bash
+   docker exec "negtest-<id>-<case>" sh -c "$(cat <<'NEGTEST_EOF'
+   <case commands>
+   NEGTEST_EOF
+   )"
+   ```
 4. Check the described side effects with further `docker exec` commands.
 5. Remove the container with `docker rm -f`, also after a failure.
 

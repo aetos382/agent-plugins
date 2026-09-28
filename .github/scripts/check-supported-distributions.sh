@@ -1,53 +1,33 @@
 #!/usr/bin/env bash
-# Checks the supported distributions of the dev-container-feature-development plugin against its
-# source of truth, skills/feature-authoring/references/supported-distributions.md.
+# Checks that every release number and image name in the dev-container-feature-development plugin
+# agrees with its source of truth, skills/feature-authoring/references/supported-distributions.md.
+# Needs no network access; run on every pull request.
 #
-# Usage: check-supported-distributions.sh consistency
-#        check-supported-distributions.sh upstream [--new-ubuntu-releases <file>]
+# Usage: check-supported-distributions.sh
 #
-#   consistency  Every release number and image name in the plugin agrees with the source of truth.
-#                Needs no network access; run on every pull request.
-#   upstream     The source of truth lists the releases that are current upstream: the latest two
-#                Ubuntu LTS releases and Debian stable and oldstable. With --new-ubuntu-releases,
-#                also writes the upstream Ubuntu releases missing from the source of truth to <file>,
-#                one per line, so that the caller can ask for the matching
-#                mcr.microsoft.com/devcontainers/base variants to be checked. Those images are not
-#                looked up here: a new Ubuntu release reaches that registry weeks later, and whether
-#                a variant is ready to adopt is a human decision.
+# Exit status: 0 when everything agrees, 1 when differences were found (reported on stdout as a
+# Markdown list), 2 on any other error.
 #
-# Exit status: 0 when everything agrees, 1 when differences were found (reported on stdout as
-# Markdown, so that the output can become an issue body as is), 2 on any other error.
-#
-# Backquotes in single-quoted strings below are Markdown code spans and sed patterns, not command
+# Backquotes in single-quoted strings below are Markdown code spans and awk patterns, not command
 # substitutions, which is what SC2016 warns about.
 # shellcheck disable=SC2016
-set -euo pipefail
+set -Eeuo pipefail
 
 die() {
   echo "check-supported-distributions.sh: $*" >&2
   exit 2
 }
 
-for command in git curl awk; do
+# set -e alone would exit with the failed command's own status, which may be 1 and read as
+# "differences found", so any unexpected failure exits 2 instead. -E makes functions and subshells
+# inherit this.
+trap 'echo "check-supported-distributions.sh: unexpected failure at line ${LINENO}." >&2; exit 2' ERR
+
+for command in git awk; do
   command -v "${command}" >/dev/null 2>&1 || die "'${command}' is required but not installed."
 done
 
-usage='usage: check-supported-distributions.sh consistency | upstream [--new-ubuntu-releases <file>]'
-mode="${1:-}"
-new_ubuntu_file=''
-case "${mode}" in
-  consistency)
-    [ "$#" -eq 1 ] || die "${usage}"
-    ;;
-  upstream)
-    if [ "$#" -eq 3 ] && [ "$2" = '--new-ubuntu-releases' ]; then
-      new_ubuntu_file="$3"
-    elif [ "$#" -ne 1 ]; then
-      die "${usage}"
-    fi
-    ;;
-  *) die "${usage}" ;;
-esac
+[ "$#" -eq 0 ] || die 'usage: check-supported-distributions.sh'
 repo_root="$(git rev-parse --show-toplevel)"
 plugin_dir="${repo_root}/plugins/dev-container-feature-development"
 source_file="${plugin_dir}/skills/feature-authoring/references/supported-distributions.md"
@@ -56,11 +36,6 @@ rules_file="${repo_root}/.claude/rules/dev-container-feature-development.md"
 source_display="${source_file#"${repo_root}/"}"
 
 [ -f "${source_file}" ] || die "source of truth not found: ${source_file}"
-
-# Checked up front: a missing template would otherwise make cat fail after the report has started,
-# and set -e would turn that into exit status 1, which means "update needed".
-issue_template="${repo_root}/.github/scripts/issue-templates/distributions-outdated.md"
-[ -f "${issue_template}" ] || die "issue template not found: ${issue_template}"
 
 # --- Source of truth -------------------------------------------------------------------------------
 
@@ -143,12 +118,10 @@ check_consistency() {
 
   # Every release number or image named anywhere else must be a supported one.
   local files
-  files="$(
-    git -C "${repo_root}" ls-files --cached --others --exclude-standard -- "${plugin_dir}" "${rules_file}" |
-      grep -vxF "${source_display}" || true
-  )"
+  files="$(git -C "${repo_root}" ls-files --cached --others --exclude-standard -- "${plugin_dir}" "${rules_file}")"
+  [ -n "${files}" ] || die "no files found under ${plugin_dir}"
   while IFS= read -r file; do
-    [ -n "${file}" ] || continue
+    [ "${file}" != "${source_display}" ] || continue
     path="${repo_root}/${file}"
     [ -f "${path}" ] || continue
 
@@ -175,91 +148,10 @@ check_consistency() {
 
   if [ -n "${problems}" ]; then
     printf '## Supported distributions are inconsistent\n\n%s' "${problems}"
-    return 1
+    # exit rather than return: a function returning nonzero would fire the ERR trap.
+    exit 1
   fi
   echo "Supported distributions are consistent with ${source_display}."
 }
 
-# --- upstream --------------------------------------------------------------------------------------
-
-# $1: URL. Prints the body; exits 2 on any transfer or HTTP error.
-fetch() {
-  local body
-  body="$(curl -fsSL --retry 3 --max-time 30 "$1")" || die "could not fetch $1"
-  printf '%s\n' "${body}"
-}
-
-capitalize() {
-  awk '{ print toupper(substr($0, 1, 1)) substr($0, 2) }'
-}
-
-check_upstream() {
-  local expected_rows='' ubuntu debian
-
-  # meta-release-lts lists every LTS release oldest first, as blocks of "Key: value" lines. Its
-  # "Supported" field says whether upgrades to a release are offered, not whether it is released,
-  # so it is not used here.
-  ubuntu="$(fetch 'https://changelogs.ubuntu.com/meta-release-lts' | awk '
-    /^Dist:/ { dist = $2 }
-    /^Version:/ && /LTS/ { split($2, parts, "."); print parts[1] "." parts[2], dist }
-  ' | tail -n 2)"
-  [ "$(printf '%s\n' "${ubuntu}" | grep -c .)" -eq 2 ] || die 'could not find two Ubuntu LTS releases.'
-  while read -r version codename; do
-    expected_rows="${expected_rows}Ubuntu ${version} $(printf '%s' "${codename}" | capitalize) ubuntu:${version}"$'\n'
-  done < <(printf '%s\n' "${ubuntu}" | sort -r)
-
-  for suite in stable oldstable; do
-    debian="$(fetch "https://deb.debian.org/debian/dists/${suite}/Release" | awk '
-      /^Version:/ { split($2, parts, "."); version = parts[1] }
-      /^Codename:/ { codename = $2 }
-      END { print version, codename }
-    ')"
-    read -r version codename <<< "${debian}"
-    [ -n "${version}" ] && [ -n "${codename}" ] || die "could not read the Debian ${suite} release."
-    expected_rows="${expected_rows}Debian ${version} $(printf '%s' "${codename}" | capitalize) debian:${version}"$'\n'
-  done
-  expected_rows="${expected_rows%$'\n'}"
-
-  if [ -n "${new_ubuntu_file}" ]; then
-    printf '%s\n' "${ubuntu}" | awk '{ print $1 }' | while IFS= read -r version; do
-      contains "${ubuntu_releases}" "${version}" || printf '%s\n' "${version}"
-    done > "${new_ubuntu_file}"
-  fi
-
-  if [ "${expected_rows}" = "${source_rows}" ]; then
-    echo "${source_display} lists the current releases."
-    return 0
-  fi
-
-  to_table() {
-    printf '| Distribution | Release | Codename | Image |\n|---|---|---|---|\n'
-    awk '{ printf "| %s | %s | %s | `%s` |\n", $1, $2, $3, $4 }'
-  }
-  # $1, $2: newline-separated rows. Prints the images of $1 that are not in $2 as a Markdown list.
-  images_only_in() {
-    local rows_a="$1" rows_b="$2" image
-    while read -r _ _ _ image; do
-      printf '%s\n' "${rows_b}" | awk '{ print $4 }' | grep -qxF -- "${image}" || printf -- '- `%s`\n' "${image}"
-    done <<< "${rows_a}"
-  }
-
-  local added removed
-  added="$(images_only_in "${expected_rows}" "${source_rows}")"
-  removed="$(images_only_in "${source_rows}" "${expected_rows}")"
-
-  # The issue body is in Japanese for the maintainers of this repository; the procedure that follows
-  # the tables lives in a template so that it can be edited without touching this script.
-  printf '上流のリリース情報が、正本 `%s` と一致しなくなった。この issue は `check-distributions.yml` ワークフローが自動で作成・更新している。\n\n' "${source_display}"
-  printf '## 変更点\n\n'
-  printf '新しく対象になるリリース:\n\n%s\n\n' "${added:-（なし）}"
-  printf '対象から外れるリリース:\n\n%s\n\n' "${removed:-（なし）}"
-  printf '## 正本の現在の表\n\n'
-  printf '%s\n' "${source_rows}" | to_table
-  printf '\n## 上流の最新\n\n'
-  printf '%s\n' "${expected_rows}" | to_table
-  printf '\n'
-  cat "${issue_template}"
-  return 1
-}
-
-"check_${mode}"
+check_consistency
