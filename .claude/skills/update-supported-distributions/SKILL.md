@@ -39,7 +39,7 @@ dev-container-feature-development の対象ディストリビューションを�
    grep -E '^[0-9]+-ubuntu[0-9]+\.[0-9]+$' Temp/mcr-base-tags.txt
    ```
 
-   手順 1 の Ubuntu 版それぞれについて、`<major>-ubuntu<version>` があるもののうち `<major>` が最大のタグを選ぶ。該当するタグがない Ubuntu 版（リリース直後で未公開）は非 root テスト イメージに含めず、その旨を最後に報告する。
+   手順 1 の Ubuntu 版それぞれについて、`<major>-ubuntu<version>` があるもののうち `<major>` が最大のタグを選ぶ。Ubuntu 版と Debian 版はバージョン番号が別々なので、Debian の variant のタグにない `<major>` があっても、提供が打ち切られたわけではない。該当するタグがない Ubuntu 版（リリース直後で未公開）は非 root テスト イメージに含めず、その旨を最後に報告する。
 
 4. 結果を正本と比べる。リリースの表と非 root テスト イメージのどちらも一致していれば、更新は不要と報告して終わる。
 
