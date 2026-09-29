@@ -14,11 +14,14 @@ Feature 実行環境となる Dev Container の OS について。
 - その他の Linux ディストリビューションについては、パッケージ マネージャーの分岐を足す程度で済む場合のみサポートする。
 - 具体的なリリース、イメージ名、アーキテクチャは `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` を正本とする。プラグイン内でリリース番号、イメージ名、アーキテクチャを書く箇所は、正本と一致させる。
   - 一致しているかは `bash .github/scripts/check-supported-platforms.sh` で検査する（CI の validate ワークフローでも実行される）。
+    - リリース番号とイメージ名は、プラグイン内のどこに書いても検査される。
+    - アーキテクチャは、ワークフロー雛形の `runner_for` と `architectures` ファイルだけが検査される。本文中の列挙（「amd64 と arm64」など）は検査されないので、正本を変えたら手で合わせる。
+    - CI ランナー名は正本と `runner_for` 以外に書かない。
   - 上流の新しいリリース（Ubuntu LTS、Debian stable、`devcontainers/base` の新しいイメージやメジャー バージョン）は自動では検出しない。気づいたら `/update-supported-distributions` スキルで更新する。
 
 ## 対象アーキテクチャ
 
-- amd64 と arm64 をサポートし、CI でそれぞれのネイティブ ランナー（`ubuntu-latest`、`ubuntu-24.04-arm`）でテストする。CI でテストできないアーキテクチャはサポートしない。
+- amd64 と arm64 をサポートし、CI でそれぞれのネイティブ ランナーでテストする。CI でテストできないアーキテクチャはサポートしない。
 - 各 Feature は対象アーキテクチャを `test/<id>/architectures` に明示する。書かれていない場合の既定値は設けない。正本にアーキテクチャを足したときに、upstream にビルドがない Feature まで黙ってテスト対象に広がるのを防ぐため。
 - upstream がビルドを公開していないアーキテクチャに限り、Feature の対象から外してよい。
 - 「テストされている」とは CI でテストされていることを指す。開発者の手元でのテストは、そのマシンのアーキテクチャしか確認できないので、根拠にしない。

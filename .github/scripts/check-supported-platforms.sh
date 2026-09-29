@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Checks that every release number, image name, and architecture in the dev-container-feature-development
-# plugin and its development rules (.claude/rules) agrees with its source of truth,
-# skills/feature-authoring/references/supported-platforms.md.
+# Checks that the dev-container-feature-development plugin and its development rules (.claude/rules)
+# agree with their source of truth, skills/feature-authoring/references/supported-platforms.md.
+# Release numbers and image names are checked wherever they appear. Architectures are checked only
+# in the workflow template's runner_for and in architectures files; prose that lists them is not.
 # Needs no network access; run on every pull request.
 #
 # Usage: check-supported-platforms.sh
