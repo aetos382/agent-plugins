@@ -82,7 +82,7 @@ case "$(uname -m)" in
 esac
 ```
 
-Map to whatever naming the upstream release uses. The branches must accept exactly the architectures in `test/<id>/architectures`: a branch for any other architecture would install something CI never tests. When the upstream publishes no build for a supported architecture, give that architecture its own branch with a message that says so, rather than the generic one:
+Map to whatever naming the upstream release uses. The branches that set `ARCH` must cover exactly the architectures in `test/<id>/architectures`: accepting any other architecture would install something CI never tests. When the upstream publishes no build for a supported architecture, that architecture is left out of `test/<id>/architectures`; give it its own branch that fails with a message saying so, rather than letting it reach the generic one:
 
 ```sh
   aarch64 | arm64)

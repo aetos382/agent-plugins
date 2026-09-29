@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Checks that every release number, image name, and architecture in the dev-container-feature-development
-# plugin and its development rules (.claude/rules) agrees with its source of truth,
-# skills/feature-authoring/references/supported-platforms.md.
+# Checks that the dev-container-feature-development plugin and its development rules (.claude/rules)
+# agree with their source of truth, skills/feature-authoring/references/supported-platforms.md.
+# Release numbers and image names are checked wherever they appear. Architectures are checked only
+# in the workflow template's runner_for and in architectures files; prose that lists them is not.
 # Needs no network access; run on every pull request.
 #
 # Usage: check-supported-platforms.sh
@@ -23,6 +24,15 @@ die() {
 # "differences found", so any unexpected failure exits 2 instead. -E makes functions and subshells
 # inherit this.
 trap 'echo "check-supported-platforms.sh: unexpected failure at line ${LINENO}." >&2; exit 2' ERR
+
+# Sets MATCHES to the output of grep with the given arguments. Unlike "|| true", this accepts only
+# "no match" (status 1), so an unreadable file or an invalid pattern still fails. The result is
+# returned in a variable because a failure inside a process substitution would not stop the script.
+grep_matches() {
+  local status=0
+  MATCHES="$(grep "$@")" || status=$?
+  [ "${status}" -le 1 ] || die "grep failed with status ${status}: grep $*"
+}
 
 for command in git awk; do
   command -v "${command}" >/dev/null 2>&1 || die "'${command}' is required but not installed."
@@ -63,7 +73,8 @@ ci_images="$(awk '
 ' "${source_file}")"
 [ -n "${ci_images}" ] || die "no CI base images found in ${source_display}"
 
-# Rows of the "Architectures" table as "<architecture> <runner>".
+# Rows of the "Architectures" table as "<architecture> <runner>". The `uname -m` column is not
+# checked against anything; the uname -m patterns in the install.sh examples are kept in step by hand.
 architecture_rows="$(awk -F'|' '
   /^## / { section = ($0 == "## Architectures"); next }
   section && /^\| [a-z0-9_]+ \|/ {
@@ -148,32 +159,44 @@ check_consistency() {
     path="${repo_root}/${file}"
     [ -f "${path}" ] || continue
 
+    # A here-string of an empty MATCHES yields one empty line, hence the -n checks.
+    grep_matches -noE '\b(ubuntu:[0-9]{2}\.[0-9]{2}|debian:[0-9]+)\b' "${path}"
     while IFS=: read -r line match; do
+      [ -n "${line}" ] || continue
       contains "${table_images}" "${match}" ||
         add_problem "\`${file}:${line}\`: \`${match}\` is not a supported image."
-    done < <(grep -noE '\b(ubuntu:[0-9]{2}\.[0-9]{2}|debian:[0-9]+)\b' "${path}" || true)
+    done <<< "${MATCHES}"
 
+    grep_matches -noE 'mcr\.microsoft\.com/devcontainers/base:[A-Za-z0-9._-]+' "${path}"
     while IFS=: read -r line match; do
+      [ -n "${line}" ] || continue
       contains "${non_root_images}" "${match}" ||
         add_problem "\`${file}:${line}\`: \`${match}\` is not one of the non-root test images."
-    done < <(grep -noE 'mcr\.microsoft\.com/devcontainers/base:[A-Za-z0-9._-]+' "${path}" || true)
+    done <<< "${MATCHES}"
 
+    grep_matches -noE '\bUbuntu [0-9]{2}\.[0-9]{2}\b' "${path}"
     while IFS=: read -r line match; do
+      [ -n "${line}" ] || continue
       contains "${ubuntu_releases}" "${match#Ubuntu }" ||
         add_problem "\`${file}:${line}\`: \`${match}\` is not a supported Ubuntu release."
-    done < <(grep -noE '\bUbuntu [0-9]{2}\.[0-9]{2}\b' "${path}" || true)
+    done <<< "${MATCHES}"
 
+    grep_matches -noE '\bDebian [0-9]{1,2}\b' "${path}"
     while IFS=: read -r line match; do
+      [ -n "${line}" ] || continue
       contains "${debian_releases}" "${match#Debian }" ||
         add_problem "\`${file}:${line}\`: \`${match}\` is not a supported Debian release."
-    done < <(grep -noE '\bDebian [0-9]{1,2}\b' "${path}" || true)
+    done <<< "${MATCHES}"
 
     # An architectures file (for example in the examples) names only supported architectures.
     if [ "${file##*/}" = architectures ]; then
+      content="$(sed 's/#.*//' "${path}")"
+      grep_matches -noE '[^[:space:]]+' <<< "${content}"
       while IFS=: read -r line match; do
+        [ -n "${line}" ] || continue
         contains "${architectures}" "${match}" ||
           add_problem "\`${file}:${line}\`: \`${match}\` is not a supported architecture."
-      done < <(sed 's/#.*//' "${path}" | grep -noE '[^[:space:]]+' || true)
+      done <<< "${MATCHES}"
     fi
   done <<< "${files}"
 

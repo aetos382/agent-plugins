@@ -104,7 +104,7 @@ Existing Features without `test/<id>/architectures`, and `test/_global` when it 
 - When it does not branch, the Feature is architecture-independent as far as the script goes; start from all supported architectures.
 - Either way, check that what the Feature installs exists for each proposed architecture, as the `new-feature` skill does: the upstream's release assets for a download, or the package's architectures for an apt repository, since a third-party repository may publish amd64 only. Leave out an architecture only when that check shows it has no build, and say which check that was.
 
-For `test/_global`, propose the architectures common to the Features its scenarios use. The workflow has not run the Features on arm64 before, so note that its first run may still fail there.
+For `test/_global`, propose the architectures common to the Features its scenarios use. When the existing workflow did not run the Features on arm64, note that the first run there may still fail.
 
 These files and the updated test workflow must land in the same commit or pull request; the workflow fails without them.
 

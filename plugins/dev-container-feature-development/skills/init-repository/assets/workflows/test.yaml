@@ -31,7 +31,7 @@ jobs:
           # supported-platforms.md in the dev-container-feature-development plugin.
           runner_for() {
             case "$1" in
-              amd64) echo 'ubuntu-latest' ;;
+              amd64) echo 'ubuntu-24.04' ;;
               arm64) echo 'ubuntu-24.04-arm' ;;
               *) return 1 ;;
             esac
@@ -65,14 +65,22 @@ jobs:
           # $1: Feature ID, or empty for the global scenarios. Sets TARGETS to one JSON target per
           # architecture, one per line. It is not printed for command substitution, which would also
           # capture the error annotations of read_architectures and hide them from the log.
+          # It is called as an if condition, where set -e does not apply, so every command that can
+          # fail is checked explicitly; otherwise a failed target would silently drop from the matrix.
           targets_for() {
-            local arch
+            local archs arch runner target
             TARGETS=''
             read_architectures "test/${1:-_global}" || return 1
+            archs="$(printf '%s' "${ARCHS}" | sort -u)" || return 1
             while IFS= read -r arch; do
-              TARGETS="${TARGETS}$(jq -cn --arg feature "$1" --arg arch "${arch}" --arg runner "$(runner_for "${arch}")" \
-                '{arch: $arch, runner: $runner} + (if $feature == "" then {} else {feature: $feature} end)')"$'\n'
-            done < <(printf '%s' "${ARCHS}" | sort -u)
+              runner="$(runner_for "${arch}")" || return 1
+              target="$(jq -cn --arg feature "$1" --arg arch "${arch}" --arg runner "${runner}" \
+                '{arch: $arch, runner: $runner} + (if $feature == "" then {} else {feature: $feature} end)')" || {
+                echo "::error::Failed to build the target for ${1:-_global} on ${arch}."
+                return 1
+              }
+              TARGETS="${TARGETS}${target}"$'\n'
+            done <<< "${archs}"
           }
 
           # Every Feature is checked before failing, so that one run reports all broken files.

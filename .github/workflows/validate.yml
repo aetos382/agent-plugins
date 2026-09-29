@@ -56,8 +56,9 @@ jobs:
           shellcheck -- "${files[@]}"
 
   # Release numbers, image names, and architectures in dev-container-feature-development must agree
-  # with its source of truth. Whether that source is current upstream is not checked here, so that a
-  # new upstream release does not fail unrelated pull requests.
+  # with its source of truth, within the scope that check-supported-platforms.sh describes. Whether
+  # that source is current upstream is not checked here, so that a new upstream release does not
+  # fail unrelated pull requests.
   platforms:
     runs-on: ubuntu-latest
     steps:

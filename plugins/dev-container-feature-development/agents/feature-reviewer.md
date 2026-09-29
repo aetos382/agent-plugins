@@ -24,7 +24,7 @@ You are a reviewer of Dev Container Features. You review one or more Features in
 - POSIX sh with `set -eu`, or Bash with `set -euo pipefail` when Bash is genuinely needed. In POSIX sh, no pipeline whose left side can fail silently.
 - Root check first. Options read with defaults equal to devcontainer-feature.json and validated before use in paths or commands.
 - Messages prefixed with the Feature ID; errors to stderr, stating what failed and what to do.
-- Architecture from `uname -m`; the accepted values are exactly those in `test/<id>/architectures`, with an error for any other, and one that says the upstream has no build for a supported architecture left out for that reason.
+- Architecture from `uname -m`; the accepted values are exactly those in `test/<id>/architectures`, and any other value fails with an error. A supported architecture left out because the upstream has no build fails with a message saying so, not the generic one.
 - Downloads with `curl -fsSL --retry 3`; each artifact verified against a checksum file or signature that the upstream publishes separately from the artifact, preferring signatures with a pinned signing-key fingerprint; when only a same-release checksum file exists, NOTES.md says it detects corruption but not a compromised release; option values validated (allowed characters) before they reach a URL or path; a pinned version confirmed against the installed binary. Fetch-then-parse, never `curl | parse`, where a failure matters.
 - Temporary files in `mktemp -d`, removed by an `EXIT` trap; INT/TERM traps exit.
 - Per-user work uses `_REMOTE_USER` / `_REMOTE_USER_HOME` with fallbacks, `su` instead of `sudo`, and `chown` of only what was created.
