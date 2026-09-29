@@ -18,7 +18,7 @@ Feature 実行環境となる Dev Container の OS について。
     - リリース番号とイメージ名は、プラグイン内のどこに書いても検査される。
     - アーキテクチャは、ワークフロー雛形の `runner_for` と `architectures` ファイルだけが検査される。本文中の列挙（「amd64 と arm64」など）は検査されないので、正本を変えたら手で合わせる。
     - CI ランナー名は正本と `runner_for` 以外に書かない。
-  - 上流の新しいリリース（Ubuntu LTS、Debian stable、`devcontainers/base` の新しいイメージやメジャー バージョン）は自動では検出しない。気づいたら `/update-supported-distributions` スキルで更新する。
+  - 上流の新しいリリース（Ubuntu LTS、Debian stable、`devcontainers/base` の新しいイメージやメジャー バージョン、GitHub ホステッド ランナーの新しい Ubuntu 版）は自動では検出しない。気づいたら `/update-supported-distributions` スキルで更新する。
 
 ## 対象アーキテクチャ
 

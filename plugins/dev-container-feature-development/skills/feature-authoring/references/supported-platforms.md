@@ -9,6 +9,7 @@ This file is the single source of truth for the distributions, images, and archi
 - **Non-root test images**: `mcr.microsoft.com/devcontainers/base` in the variant for each supported Ubuntu LTS release, each at the newest major version that has that variant. The Ubuntu and Debian variants of `devcontainers/base` are built from separate image definitions with their own version numbers, so a major version applies to one family only (for example, `3` is an Ubuntu major version and has no Debian variants). These images have a non-root `vscode` user, which exercises the `_REMOTE_USER` path, and are what most dev containers are built on. The variant for a new Ubuntu release appears weeks after the release; until it does, the list covers only the supported releases that have one.
 - Other distributions are supported only when doing so costs no more than a package-manager branch, and are not tested.
 - **Architectures**: every architecture in the "Architectures" table, each tested in CI on a native runner of that architecture. A Feature may leave one out only when the upstream publishes no build for it. Architectures missing from the table are not supported, because CI cannot test them.
+- **CI runners**: GitHub-hosted runners of the newest Ubuntu LTS release that GitHub offers for every architecture in the table, named by release rather than `ubuntu-latest`. Like the base images, they are pinned so that a change of the default runner image cannot fail unrelated pull requests; moving to a newer release is a deliberate change. Arm64 runners have no `latest` label in any case.
 - A platform counts as tested only when the CI test workflow runs it. A local run on the developer's machine does not count, because it covers only that machine's architecture and is not repeated on every pull request.
 
 ## Current releases
@@ -46,5 +47,5 @@ Each Feature lists the architectures it supports in `test/<id>/architectures`, a
 
 | Architecture | `uname -m` | CI runner |
 |---|---|---|
-| amd64 | `x86_64` | `ubuntu-latest` |
+| amd64 | `x86_64` | `ubuntu-24.04` |
 | arm64 | `aarch64` | `ubuntu-24.04-arm` |

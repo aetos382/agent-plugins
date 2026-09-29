@@ -31,7 +31,7 @@ jobs:
           # supported-platforms.md in the dev-container-feature-development plugin.
           runner_for() {
             case "$1" in
-              amd64) echo 'ubuntu-latest' ;;
+              amd64) echo 'ubuntu-24.04' ;;
               arm64) echo 'ubuntu-24.04-arm' ;;
               *) return 1 ;;
             esac
