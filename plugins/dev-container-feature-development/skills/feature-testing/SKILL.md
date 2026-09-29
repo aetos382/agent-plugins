@@ -17,8 +17,9 @@ Tests live in `test/<id>/`, mirroring `src/<id>/`. They run with `devcontainer f
 | `test/<id>/duplicate.sh` | Duplicate | Installs the Feature twice, once with default options and once with other values; option values are exposed as `<OPTION>` and `<OPTION>__DEFAULT`. |
 | `test/_global/scenarios.json` | Global scenario | Scenarios spanning several Features. |
 | `test/<id>/negative-tests.md` | Manual | Failure cases the CLI cannot express, run by `docker run`. See below. |
+| `test/<id>/architectures`, `test/_global/architectures` | Configuration | Not read by the CLI. The test workflow runs every test above once per listed architecture, on a native runner. See below. |
 
-`test.sh` is mandatory for every Feature: the auto-generated run fails without it.
+`test.sh` is mandatory for every Feature: the auto-generated run fails without it. So is `architectures`: the test workflow fails when it is missing, and so does `test/_global/architectures` when `test/_global/scenarios.json` exists.
 
 Make every test script executable, following the rule in the `new-feature` skill: `chmod +x`, then record the mode with `git add --chmod=+x <files>`, since Git does not pick up the bit on Windows or with `core.fileMode=false`. Tell the user that this stages the files.
 
@@ -26,12 +27,18 @@ Make every test script executable, following the rule in the `new-feature` skill
 
 1. **Default options** (`test.sh`): the tool is on `PATH`, runs, is at the documented path with the documented owner and mode, and nothing is left behind that the Feature promises to clean up.
 2. **Each option** (scenarios): one scenario per non-default value that changes behavior. Assert the effect of the option, not only that the build succeeded.
-3. **Non-root remote user** (scenario): use one of the non-root test images from `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-distributions.md` (`mcr.microsoft.com/devcontainers/base` images) with `"remoteUser": "vscode"` whenever the Feature touches a user's home, a user-owned file, or `PATH`. The check runs as that user.
+3. **Non-root remote user** (scenario): use one of the non-root test images from `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md` (`mcr.microsoft.com/devcontainers/base` images) with `"remoteUser": "vscode"` whenever the Feature touches a user's home, a user-owned file, or `PATH`. The check runs as that user.
 4. **Bare image** (scenario, when the Feature installs dependencies): an official Debian or Ubuntu image with `"remoteUser": "root"`, where tools like `curl` are missing, to exercise dependency installation.
 5. **Idempotency** (`duplicate.sh`): when the Feature has options that change what is installed.
 6. **Failure paths** (`negative-tests.md`): invalid option values, verification failures, missing dependencies without `apt-get`.
 
-Scenarios pin their own `image`, so they run once rather than once per base image. Spread scenarios across the supported releases listed in `supported-distributions.md` instead of putting all of them on one image, and use only images listed there. Release numbers in the examples of this skill are illustrations; take the current ones from that file.
+Scenarios pin their own `image`, so they run once per architecture rather than once per base image. Spread scenarios across the supported releases listed in `supported-platforms.md` instead of putting all of them on one image, and use only images listed there. Release numbers in the examples of this skill are illustrations; take the current ones from that file.
+
+## architectures
+
+One architecture per line, using the names in the "Architectures" table of `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`. Blank lines and text after `#` are ignored. List every architecture there unless the upstream publishes no build for one (see the `feature-authoring` skill); the file is required even then, so that the architectures a Feature is tested on are always stated rather than implied. The test workflow fails on a missing or empty file and on a name that is not in the table. `examples/architectures` lists them all.
+
+For `test/_global/architectures`, list only the architectures that every Feature used by the global scenarios supports.
 
 ## Writing assertion scripts
 
@@ -103,4 +110,5 @@ Whenever install.sh contains a failure path that no test covers, add a comment n
 - **`examples/test.sh`** — default-options test.
 - **`examples/scenarios.json`** and **`examples/non_root_user.sh`** — a scenario with a non-root remote user.
 - **`examples/duplicate.sh`** — idempotency test.
+- **`examples/architectures`** — the architectures file of a Feature that supports every architecture.
 - **`examples/negative-tests.md`** — manual failure cases in the format `run-feature-tests` executes.

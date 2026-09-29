@@ -82,7 +82,16 @@ case "$(uname -m)" in
 esac
 ```
 
-Map to whatever naming the upstream release uses, and list the supported architectures in `NOTES.md`.
+Map to whatever naming the upstream release uses. The branches must accept exactly the architectures in `test/<id>/architectures`: a branch for any other architecture would install something CI never tests. When the upstream publishes no build for a supported architecture, give that architecture its own branch with a message that says so, rather than the generic one:
+
+```sh
+  aarch64 | arm64)
+    echo "${FEATURE_ID}: mytool publishes no build for arm64." >&2
+    exit 1
+    ;;
+```
+
+List the tested architectures in `NOTES.md`.
 
 ## Resolving "latest"
 
