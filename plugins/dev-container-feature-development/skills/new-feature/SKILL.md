@@ -13,7 +13,7 @@ Reply to the user in the language they use. Do not commit; offer to at the end.
 ## 1. Check the repository
 
 - The repository should be a Features collection: `src/` and a test workflow that runs `devcontainer features test`, or calls a reusable workflow that does. When either is missing, suggest running the `init-repository` skill first, and continue only if the user wants to.
-- When the argument names an ID, check that `src/<id>/` does not exist yet.
+- When the argument names an ID, check that `src/<id>/` does not exist yet and that the ID is not `global`, which is reserved (see "ID and name" in the interview below).
 
 ## 2. Research, then interview
 
@@ -28,7 +28,7 @@ Use `gh release view -R <owner>/<repo>` and `gh release list` for GitHub-hosted 
 
 Then ask, with `AskUserQuestion`, about what remains open. Typical questions:
 
-1. **ID and name**: propose a lowercase, hyphenated ID that does not collide with an existing `src/<id>`.
+1. **ID and name**: propose a lowercase, hyphenated ID that does not collide with an existing `src/<id>`. `global` is reserved: its job would be named `test-global`, the name of the job for the global scenarios.
 2. **Install method**: recommend a download of a verified release artifact over an apt repository or a piped install script. An apt repository lets `apt-get upgrade` move a pinned version, and an unverified install script runs whatever the server returns.
 3. **Options**: `version` (with `latest`) is almost always right. Propose others only for behavior users will plausibly want to change.
 4. **Per-user behavior**: whether the Feature configures anything for `_REMOTE_USER`.

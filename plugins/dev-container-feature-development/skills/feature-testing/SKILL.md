@@ -51,11 +51,13 @@ The CLI does not decide where tests run; the test workflow does. `.github/workfl
 
 When `test/_global/scenarios.json` exists, a job named `test-global` does the same with `feature: _global`. List only the architectures that every Feature used by the global scenarios supports.
 
-Every job must also be listed under `needs` of the `tests-passed` job, which aggregates the results into the check that branch rules require. Nothing in CI checks these jobs: a Feature without a `test-<id>` job is never tested, and a job missing from `needs` does not block a merge when it fails, while CI stays green. After any of the changes below, run the `feature-reviewer` agent, which checks them.
+A Feature cannot have the ID `global`, since its job would take the name `test-global`.
+
+Every job must also be listed under `needs` of the `tests-passed` job, which aggregates the results into the check that branch rules require. CI cannot detect a job that is absent: a Feature without a `test-<id>` job is never tested, and a job missing from `needs` can fail without blocking a merge, because the required `tests-passed` check still passes. After any of the changes below, run the `feature-reviewer` agent, which checks for both.
 
 - **Adding a Feature**: add its `test-<id>` job and add `test-<id>` to `needs` of `tests-passed`, creating `needs` when it is absent.
 - **Removing a Feature**: remove its job and its entry in `needs`, and check whether the global scenarios used it.
-- **Renaming a Feature**: change the job name, `feature`, and the entry in `needs`.
+- **Renaming a Feature**: change the job name, `feature`, and the entry in `needs`. The new ID cannot be `global`.
 - **Changing the architectures of a Feature**: change the `uname -m` branches of `install.sh` and the Limitations of `NOTES.md` together with `architectures`, following the `feature-authoring` skill, since all three must agree. Leave out an architecture only when the upstream publishes no build for it. When the global scenarios use the Feature, narrow `architectures` of `test-global` to match.
 
 ## Writing assertion scripts

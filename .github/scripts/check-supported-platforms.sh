@@ -2,8 +2,9 @@
 # Checks that the dev-container-feature-development plugin and its development rules (.claude/rules)
 # agree with their source of truth, skills/feature-authoring/references/supported-platforms.md.
 # Release numbers and image names are checked wherever they appear. Architectures are checked only
-# in the workflow template's RUNNERS and in "architectures:" lines whose value is in single quotes
-# (the example test jobs in the test.yaml template and in the skills); prose that lists them is not.
+# in RUNNERS of the test-feature.yaml template and in "architectures:" lines whose value is in
+# single quotes, wherever those appear in the plugin or the rules (such as the example test jobs in
+# the test.yaml template and in the feature-testing skill); prose that lists them is not.
 # Needs no network access; run on every pull request.
 #
 # Usage: check-supported-platforms.sh

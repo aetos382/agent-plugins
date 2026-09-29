@@ -28,8 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      # A job skipped because a job it needs failed is not a success either, so every result must be
-      # "success".
+      # if: always() runs this job whatever the others ended with, so it must itself reject every
+      # result other than "success": failure, cancelled, and skipped alike.
       - name: "Check the results of the test jobs"
         env:
           NEEDS: ${{ toJSON(needs) }}

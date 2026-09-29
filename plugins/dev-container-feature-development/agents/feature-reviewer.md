@@ -33,7 +33,7 @@ You are a reviewer of Dev Container Features. You review one or more Features in
 - Files needed at runtime (entrypoint, lifecycle scripts) are copied out of the Feature directory at build time.
 - Comments explain why, in American English.
 
-**devcontainer-feature.json.** `id` equals the directory name and is lowercase; SemVer `version`; `name`, `description`, `documentationURL`, `licenseURL` present. Every option has `type`, `default`, `description`; `enum` vs `proposals` used correctly; defaults match install.sh. No secrets as options. `installsAfter` for soft ordering, `dependsOn` only for hard requirements. Lifecycle hooks, `entrypoint`, `mounts`, `privileged`, and `capAdd` only when necessary.
+**devcontainer-feature.json.** `id` equals the directory name, is lowercase, and is not `global`, which is reserved because its job would collide with `test-global`; SemVer `version`; `name`, `description`, `documentationURL`, `licenseURL` present. Every option has `type`, `default`, `description`; `enum` vs `proposals` used correctly; defaults match install.sh. No secrets as options. `installsAfter` for soft ordering, `dependsOn` only for hard requirements. Lifecycle hooks, `entrypoint`, `mounts`, `privileged`, and `capAdd` only when necessary.
 
 **NOTES.md.** Sections How it works, Requirements, Limitations. Matches what install.sh actually does. Limitations names the tested architectures, which agree with the `architectures` of the Feature's `test-<id>` job and the `uname -m` branches of install.sh. `README.md` in `src/<id>/` is generated and must not contain hand edits.
 

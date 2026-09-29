@@ -126,7 +126,8 @@ Write the approved files. Then check them:
 - `jq empty` on every JSON file written.
 - `actionlint` on the workflows, when it is installed.
 - For existing Features, confirm that each `test/<id>/test.sh` exists, since each now has a `test-<id>` job, whose auto-generated test fails without it. List any that are missing and offer the `feature-testing` skill.
-- Confirm the jobs of the test workflow, since nothing in CI checks them: every Feature under `src/` has a `test-<id>` job calling `test-feature.yaml` with `feature: <id>`, `test-global` exists when `test/_global/scenarios.json` does, no job tests anything else, and `tests-passed` needs every other job. `test-feature.yaml` itself checks the architectures when it runs.
+- Confirm the jobs of the test workflow, since CI cannot detect a missing job or a missing `needs` entry: every Feature under `src/` has exactly one job, `test-<id>`, calling `test-feature.yaml` with `feature: <id>`, so that the job name and `feature` agree; `test-global` exists when `test/_global/scenarios.json` does; no job names a Feature that is not under `src/`; and `tests-passed` needs every other job. `test-feature.yaml` itself checks the Feature ID and the architectures when it runs.
+- When an existing Feature has the ID `global`, which is reserved because its job would collide with `test-global`, point it out and suggest renaming the Feature.
 
 ## 6. Hand over the manual steps
 
