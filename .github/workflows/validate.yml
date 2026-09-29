@@ -69,11 +69,13 @@ jobs:
 
   # Lints this repository's workflows and the workflow templates that plugins ship. actionlint also
   # runs ShellCheck, which its image includes, on the Bash embedded in run steps; the shellcheck job
-  # above sees only *.sh files. The image is pinned by digest and updated by hand.
+  # above sees only *.sh files. The image is pinned by digest and updated by hand. It comes from the
+  # kjanat/actionlint fork, since rhysd/actionlint has had no release since v1.7.12 and does not know
+  # newer runner labels such as ubuntu-26.04 (see rhysd/actionlint#719).
   actionlint:
     runs-on: ubuntu-latest
     env:
-      ACTIONLINT_IMAGE: rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+      ACTIONLINT_IMAGE: kjanat/actionlint:1.17.0@sha256:d484cccadf56b6a356466ade9af4c8e05c5dce1badaf0a9ecd0d7639d68d9c92
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
