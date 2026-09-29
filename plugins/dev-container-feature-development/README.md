@@ -19,7 +19,7 @@ A Claude Code plugin for authoring, testing, and releasing [Dev Container Featur
 
 | Skill | When it applies |
 |---|---|
-| `feature-authoring` | Editing `src/<id>/`: the `devcontainer-feature.json` schema, `install.sh` conventions, supported distributions, and dependency policy. |
+| `feature-authoring` | Editing `src/<id>/`: the `devcontainer-feature.json` schema, `install.sh` conventions, supported distributions and architectures, and dependency policy. |
 | `feature-testing` | Editing `test/<id>/`: test kinds, scenarios, assertion scripts, and negative tests. |
 
 ### Agent
@@ -31,9 +31,10 @@ A Claude Code plugin for authoring, testing, and releasing [Dev Container Featur
 ## Conventions applied to Features
 
 - Features must work on Ubuntu 26.04, Ubuntu 24.04, Debian 13, and Debian 12 (the latest two Ubuntu LTS releases and Debian stable and oldstable), and CI tests them all, plus `mcr.microsoft.com/devcontainers/base:3-ubuntu26.04` and `mcr.microsoft.com/devcontainers/base:3-ubuntu24.04` for a non-root user. Other distributions are supported only when that costs no more than a package-manager branch.
+- Features support amd64 and arm64, and CI tests each on a native GitHub-hosted runner (`ubuntu-latest` and `ubuntu-24.04-arm`). Each Feature lists its architectures in `test/<id>/architectures`, and may leave one out only when the upstream publishes no build for it.
 - Missing dependencies are installed with `apt-get`. Without `apt-get`, the Feature fails with a message naming what is missing.
 - Downloads are verified by checksum or signature.
-- Dependencies and tested distributions are documented in each Feature's `NOTES.md`.
+- Dependencies, tested distributions, and tested architectures are documented in each Feature's `NOTES.md`.
 - Failure paths that `devcontainer features test` cannot express are documented in `test/<id>/negative-tests.md`, which `run-feature-tests` executes.
 
 ## Requirements

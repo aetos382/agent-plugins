@@ -5,7 +5,7 @@ description: dev-container-feature-development の対象ディストリビュー
 
 # 対象ディストリビューションの更新
 
-dev-container-feature-development の対象ディストリビューションを上流の最新に合わせる。正本は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-distributions.md` で、方針は同ファイルの「Policy」節に従う。
+dev-container-feature-development の対象ディストリビューションを上流の最新に合わせる。正本は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` で、方針は同ファイルの「Policy」節に従う。正本の「Architectures」節（対象アーキテクチャと CI ランナー）は上流のリリースに連動しないので、このスキルでは扱わない。
 
 このスキルは作業ツリーの変更と検証までを行う。コミット、プッシュ、プル リクエストの作成は、ユーザーの指示を待つ。各手順で想定外の結果になった場合や、判断に迷う置き換えがある場合は、先へ進まずに報告する。
 
@@ -57,7 +57,7 @@ dev-container-feature-development の対象ディストリビューションを�
 
 ## 4. 他の箇所を合わせる
 
-1. `bash .github/scripts/check-supported-distributions.sh` を実行し、報告された箇所を直す。報告が出なくなるまで繰り返す。置き換えの規則は次のとおり。
+1. `bash .github/scripts/check-supported-platforms.sh` を実行し、報告された箇所を直す。報告が出なくなるまで繰り返す。置き換えの規則は次のとおり。
 
    | 箇所 | 置き換え方 |
    |---|---|
@@ -68,7 +68,7 @@ dev-container-feature-development の対象ディストリビューションを�
 
 2. 照合スクリプトは、書かれた名前が対象内かどうかしか見ず、列挙の漏れは検出しない。次の列挙は報告の有無にかかわらず正本と突き合わせ、追加された版が漏れていれば直す。
    - `plugins/dev-container-feature-development/README.md` の Conventions 節
-   - `plugins/dev-container-feature-development/agents/feature-reviewer.md` の Supported distributions と非 root シナリオの例
+   - `plugins/dev-container-feature-development/agents/feature-reviewer.md` の Supported platforms と非 root シナリオの例
    - `plugins/dev-container-feature-development/skills/feature-authoring/examples/NOTES.md` の Limitations 節
 3. 照合スクリプトはコードネームも見ない。対象から外れたリリースのコードネーム（例: `Bookworm`）で `plugins/dev-container-feature-development` と `.claude/rules` を検索し、見つかれば直す。
 

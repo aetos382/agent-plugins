@@ -91,12 +91,22 @@ For each destination, decide:
 
 - **Create** when neither the file nor a workflow with the same role exists.
 - **Update** when a file with the same role exists. Keep its file name (for example an existing `validate.yml`). Merge the template's substance into it rather than replacing it: preserve jobs, steps, Features, and settings the template does not have, and explain each change. The substance to carry over is:
-  - Test workflow: Features discovered from `src/` instead of a hard-coded list; a `baseImage` matrix equal to the "CI base images" list in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-distributions.md`; matrix values passed through `env`; a job for `test/_global` scenarios; the `tests-passed` aggregate job.
+  - Test workflow: Features discovered from `src/` instead of a hard-coded list; a `baseImage` matrix equal to the "CI base images" list in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`; test targets built from each `test/<id>/architectures` (and `test/_global/architectures`), each running on the runner that the "Architectures" table of that file names, with no default for a missing file; matrix values passed through `env`; a job for `test/_global` scenarios; the `tests-passed` aggregate job.
   - Release workflow: publishing with `generate-docs`, followed by the documentation pull request step; runs only on the default branch, one at a time.
   - Validate workflow: `validate-only` and ShellCheck over `git ls-files '*.sh'`, with the `validation-passed` aggregate job.
   - Actions pinned to commit SHAs with the tag in a comment.
   - Dependency updates: GitHub Actions and the dev container's Features are both covered. With an existing Renovate configuration, check what it covers instead of rewriting it, and propose only the missing pieces.
 - **Keep** when the existing file already satisfies the template.
+
+Existing Features without `test/<id>/architectures`, and `test/_global` when it has `scenarios.json` but no `architectures`: the test workflow fails on them, so plan to create each file. Propose its contents from the architectures in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`, narrowed by what the Feature can install on each:
+
+- When `install.sh` branches on `uname -m`, keep the supported architectures that the branches accept, and point out any that they reject, since the Feature is then not tested on it.
+- When it does not branch, the Feature is architecture-independent as far as the script goes; start from all supported architectures.
+- Either way, check that what the Feature installs exists for each proposed architecture, as the `new-feature` skill does: the upstream's release assets for a download, or the package's architectures for an apt repository, since a third-party repository may publish amd64 only. Leave out an architecture only when that check shows it has no build, and say which check that was.
+
+For `test/_global`, propose the architectures common to the Features its scenarios use. The workflow has not run the Features on arm64 before, so note that its first run may still fail there.
+
+These files and the updated test workflow must land in the same commit or pull request; the workflow fails without them.
 
 `README.md` in an existing repository: add only what is missing, typically the Features table. Fill the table with one row per Feature, using `name` or `id` linked to `src/<id>` and `description` from its `devcontainer-feature.json`.
 
@@ -110,7 +120,7 @@ Write the approved files. Then check them:
 
 - `jq empty` on every JSON file written.
 - `actionlint` on the workflows, when it is installed.
-- For existing Features, confirm that each `test/<id>/test.sh` exists, since the discovered matrix now tests every Feature under `src/`. List any that are missing and offer the `feature-testing` skill.
+- For existing Features, confirm that each `test/<id>/test.sh` and `test/<id>/architectures` exists, since the discovered matrix now tests every Feature under `src/`. List any that are missing and offer the `feature-testing` skill.
 
 ## 6. Hand over the manual steps
 

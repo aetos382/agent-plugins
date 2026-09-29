@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Checks that every release number and image name in the dev-container-feature-development plugin
-# and its development rules (.claude/rules) agrees with its source of truth,
-# skills/feature-authoring/references/supported-distributions.md.
+# Checks that every release number, image name, and architecture in the dev-container-feature-development
+# plugin and its development rules (.claude/rules) agrees with its source of truth,
+# skills/feature-authoring/references/supported-platforms.md.
 # Needs no network access; run on every pull request.
 #
-# Usage: check-supported-distributions.sh
+# Usage: check-supported-platforms.sh
 #
 # Exit status: 0 when everything agrees, 1 when differences were found (reported on stdout as a
 # Markdown list), 2 on any other error.
@@ -15,23 +15,23 @@
 set -Eeuo pipefail
 
 die() {
-  echo "check-supported-distributions.sh: $*" >&2
+  echo "check-supported-platforms.sh: $*" >&2
   exit 2
 }
 
 # set -e alone would exit with the failed command's own status, which may be 1 and read as
 # "differences found", so any unexpected failure exits 2 instead. -E makes functions and subshells
 # inherit this.
-trap 'echo "check-supported-distributions.sh: unexpected failure at line ${LINENO}." >&2; exit 2' ERR
+trap 'echo "check-supported-platforms.sh: unexpected failure at line ${LINENO}." >&2; exit 2' ERR
 
 for command in git awk; do
   command -v "${command}" >/dev/null 2>&1 || die "'${command}' is required but not installed."
 done
 
-[ "$#" -eq 0 ] || die 'usage: check-supported-distributions.sh'
+[ "$#" -eq 0 ] || die 'usage: check-supported-platforms.sh'
 repo_root="$(git rev-parse --show-toplevel)"
 plugin_dir="${repo_root}/plugins/dev-container-feature-development"
-source_file="${plugin_dir}/skills/feature-authoring/references/supported-distributions.md"
+source_file="${plugin_dir}/skills/feature-authoring/references/supported-platforms.md"
 workflow_template="${plugin_dir}/skills/init-repository/assets/workflows/test.yaml"
 rules_file="${repo_root}/.claude/rules/dev-container-feature-development.md"
 source_display="${source_file#"${repo_root}/"}"
@@ -62,6 +62,16 @@ ci_images="$(awk '
   section && fence && NF { print }
 ' "${source_file}")"
 [ -n "${ci_images}" ] || die "no CI base images found in ${source_display}"
+
+# Rows of the "Architectures" table as "<architecture> <runner>".
+architecture_rows="$(awk -F'|' '
+  /^## / { section = ($0 == "## Architectures"); next }
+  section && /^\| [a-z0-9_]+ \|/ {
+    for (i = 2; i <= 4; i++) { gsub(/[ `]/, "", $i) }
+    print $2, $4
+  }' "${source_file}")"
+[ -n "${architecture_rows}" ] || die "no architecture rows found in ${source_display}"
+architectures="$(printf '%s\n' "${architecture_rows}" | awk '{ print $1 }')"
 
 table_images="$(printf '%s\n' "${source_rows}" | awk '{ print $4 }')"
 ubuntu_releases="$(printf '%s\n' "${source_rows}" | awk '$1 == "Ubuntu" { print $2 }')"
@@ -117,6 +127,18 @@ check_consistency() {
     add_problem "\`${workflow_template#"${repo_root}/"}\`: the \`baseImage\` matrix differs from the CI base images in \`${source_display}\`."
   fi
 
+  # The workflow template maps the same architectures to the same runners, in the same order.
+  template_runners="$(awk '
+    /^ *runner_for\(\) \{/ { section = 1; next }
+    section && /^ *[a-z0-9_]+\) echo '\''[^'\'']*'\'' ;;$/ {
+      sub(/^ */, ""); sub(/\) echo '\''/, " "); sub(/'\'' ;;$/, ""); print; next
+    }
+    section && /^ *\}/ { exit }
+  ' "${workflow_template}")"
+  if [ "${template_runners}" != "${architecture_rows}" ]; then
+    add_problem "\`${workflow_template#"${repo_root}/"}\`: the runners in \`runner_for\` differ from the architectures in \`${source_display}\`."
+  fi
+
   # Every release number or image named anywhere else must be a supported one.
   local files
   files="$(git -C "${repo_root}" ls-files --cached --others --exclude-standard -- "${plugin_dir}" "${rules_file}")"
@@ -145,14 +167,22 @@ check_consistency() {
       contains "${debian_releases}" "${match#Debian }" ||
         add_problem "\`${file}:${line}\`: \`${match}\` is not a supported Debian release."
     done < <(grep -noE '\bDebian [0-9]{1,2}\b' "${path}" || true)
+
+    # An architectures file (for example in the examples) names only supported architectures.
+    if [ "${file##*/}" = architectures ]; then
+      while IFS=: read -r line match; do
+        contains "${architectures}" "${match}" ||
+          add_problem "\`${file}:${line}\`: \`${match}\` is not a supported architecture."
+      done < <(sed 's/#.*//' "${path}" | grep -noE '[^[:space:]]+' || true)
+    fi
   done <<< "${files}"
 
   if [ -n "${problems}" ]; then
-    printf '## Supported distributions are inconsistent\n\n%s' "${problems}"
+    printf '## Supported platforms are inconsistent\n\n%s' "${problems}"
     # exit rather than return: a function returning nonzero would fire the ERR trap.
     exit 1
   fi
-  echo "Supported distributions are consistent with ${source_display}."
+  echo "Supported platforms are consistent with ${source_display}."
 }
 
 check_consistency

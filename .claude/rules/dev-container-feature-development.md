@@ -12,9 +12,16 @@ Feature 実行環境となる Dev Container の OS について。
 
 - Ubuntu の最新および 1 つ前の LTS リリースと、Debian の stable および oldstable は必ずサポートする。非 root ユーザーでのテストには、サポート対象の各 Ubuntu LTS について、`mcr.microsoft.com/devcontainers/base` のその版の variant を持つ最新メジャー バージョンを使う。
 - その他の Linux ディストリビューションについては、パッケージ マネージャーの分岐を足す程度で済む場合のみサポートする。
-- 具体的なリリースとイメージ名は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-distributions.md` を正本とする。プラグイン内でリリース番号やイメージ名を書く箇所は、正本と一致させる。
-  - 一致しているかは `bash .github/scripts/check-supported-distributions.sh` で検査する（CI の validate ワークフローでも実行される）。
+- 具体的なリリース、イメージ名、アーキテクチャは `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` を正本とする。プラグイン内でリリース番号、イメージ名、アーキテクチャを書く箇所は、正本と一致させる。
+  - 一致しているかは `bash .github/scripts/check-supported-platforms.sh` で検査する（CI の validate ワークフローでも実行される）。
   - 上流の新しいリリース（Ubuntu LTS、Debian stable、`devcontainers/base` の新しいイメージやメジャー バージョン）は自動では検出しない。気づいたら `/update-supported-distributions` スキルで更新する。
+
+## 対象アーキテクチャ
+
+- amd64 と arm64 をサポートし、CI でそれぞれのネイティブ ランナー（`ubuntu-latest`、`ubuntu-24.04-arm`）でテストする。CI でテストできないアーキテクチャはサポートしない。
+- 各 Feature は対象アーキテクチャを `test/<id>/architectures` に明示する。書かれていない場合の既定値は設けない。正本にアーキテクチャを足したときに、upstream にビルドがない Feature まで黙ってテスト対象に広がるのを防ぐため。
+- upstream がビルドを公開していないアーキテクチャに限り、Feature の対象から外してよい。
+- 「テストされている」とは CI でテストされていることを指す。開発者の手元でのテストは、そのマシンのアーキテクチャしか確認できないので、根拠にしない。
 
 ## 開発方針
 

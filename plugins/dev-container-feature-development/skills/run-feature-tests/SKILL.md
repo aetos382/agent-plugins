@@ -35,11 +35,17 @@ Tests execute code from the repository: `install.sh` and scenario configurations
 
 Run locally when both `command -v devcontainer` and `docker info` succeed. Otherwise use CI (section 5) and tell the user why local execution was not possible (no Docker daemon, or no Dev Container CLI; the CLI installs with `npm install -g @devcontainers/cli`).
 
+A local run covers only the architecture of the Docker host: `docker info --format '{{.Architecture}}'` reports it as `uname -m` does, and the "Architectures" table of `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md` maps that to an architecture name. Compare it with each target's `test/<id>/architectures`:
+
+- A target that does not list the host architecture cannot be tested locally. Use CI for it.
+- The listed architectures other than the host's are covered only by CI. After the local run, offer to check them with section 5, and until then report them as not run. Never report a Feature as tested on an architecture that only the local run covered, or on one that nothing ran.
+- A missing or empty `architectures` file fails the test workflow. Report it, and offer the `feature-testing` skill.
+
 ## 3. Run locally
 
 ### Base images
 
-Read the `baseImage` list from the matrix of the workflow that runs `devcontainer features test` (usually `.github/workflows/test.yaml`), so that local runs match CI. When no workflow exists, use the "CI base images" list in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-distributions.md`.
+Read the `baseImage` list from the matrix of the workflow that runs `devcontainer features test` (usually `.github/workflows/test.yaml`), so that local runs match CI. When no workflow exists, use the "CI base images" list in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`.
 
 When the workflow's list differs from that file, run with the workflow's list, and mention the difference in the report: the repository may not have been updated for a new release yet.
 
@@ -115,9 +121,9 @@ Present proposed fixes; apply them only when the user asks.
    ```
 
    Pick the run whose `headSha` equals `git rev-parse HEAD`. When none exists yet, wait a few seconds and retry; report after about a minute without a run.
-5. Wait with `gh run watch <id> --exit-status`. On failure, read `gh run view <id> --log-failed` and analyze as in section 4.
+5. Wait with `gh run watch <id> --exit-status`. On failure, read `gh run view <id> --log-failed` and analyze as in section 4. Read the results per architecture from the job names (`gh run view <id> --json jobs`): the workflow created by `init-repository` names each job after its Feature and architecture, and a failure on one architecture only is usually an upstream build or an image difference.
 6. Negative tests cannot run in CI. Report them as not run.
 
 ## 6. Report
 
-Summarize in a table: rows are Features × (each base image, each scenario, each negative case), columns are result and a one-line note. List failures with their classification and proposed fix below the table. Mention anything that was not run and why.
+Summarize in a table: rows are Features × architecture × (each base image, each scenario), plus each negative case, and columns are where it ran (local or CI), result, and a one-line note. List failures with their classification and proposed fix below the table. Mention anything that was not run and why.

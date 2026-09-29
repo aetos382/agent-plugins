@@ -13,5 +13,5 @@
 ## Limitations
 
 - Tested on Ubuntu 26.04, Ubuntu 24.04, Debian 13, and Debian 12. Other distributions are not tested.
-- Linux only, for `amd64` and `arm64`.
+- Linux only. Tested on `amd64` and `arm64`, the architectures CI runs; other architectures are not supported.
 - Pin an exact version for reproducible builds; `latest` changes whenever upstream releases.
