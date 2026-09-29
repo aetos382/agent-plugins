@@ -12,7 +12,7 @@ Reply to the user in the language they use. Do not commit; offer to at the end.
 
 ## 1. Check the repository
 
-- The repository should be a Features collection: `src/` and a test workflow that runs `devcontainer features test`. When either is missing, suggest running the `init-repository` skill first, and continue only if the user wants to.
+- The repository should be a Features collection: `src/` and a test workflow that runs `devcontainer features test`, or calls a reusable workflow that does. When either is missing, suggest running the `init-repository` skill first, and continue only if the user wants to.
 - When the argument names an ID, check that `src/<id>/` does not exist yet.
 
 ## 2. Research, then interview
@@ -47,7 +47,6 @@ Create, following the `feature-authoring` skill:
 
 Then the tests, following the `feature-testing` skill:
 
-- `test/<id>/architectures` listing the architectures agreed above.
 - `test/<id>/test.sh` for the default options.
 - `test/<id>/scenarios.json` with a scenario per behavior-changing option value, a `non_root_user` scenario when anything touches a user's environment, and, when the Feature installs dependencies, a bare-image scenario that exercises that installation. Spread scenarios across the supported releases.
 - `test/<id>/duplicate.sh` when options change what gets installed.
@@ -57,8 +56,8 @@ Make `install.sh` and every test script executable, so that they can be run dire
 
 Also update:
 
+- The test workflow (usually `.github/workflows/test.yaml`): add a `test-<id>` job with the architectures agreed above, and add it to `needs` of `tests-passed`, as the "Test jobs" section of the `feature-testing` skill describes. Without the job, CI does not test the Feature, and nothing in CI reports it. When the test workflow does not call `test-feature.yaml` (a repository not yet updated by `init-repository`), do what that workflow expects of a new Feature instead, and suggest running `init-repository` to update it.
 - The Features table in the root `README.md`, when there is one.
-- The test workflow's Feature list, only if it hard-codes one instead of discovering Features from `src/`.
 
 Run `shellcheck` on every new script when it is available and fix what it reports.
 

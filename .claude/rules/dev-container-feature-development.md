@@ -16,14 +16,15 @@ Feature 実行環境となる Dev Container の OS について。
 - 具体的なリリース、イメージ名、アーキテクチャは `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` を正本とする。プラグイン内でリリース番号、イメージ名、アーキテクチャを書く箇所は、正本と一致させる。
   - 一致しているかは `bash .github/scripts/check-supported-platforms.sh` で検査する（CI の validate ワークフローでも実行される）。
     - リリース番号とイメージ名は、プラグイン内のどこに書いても検査される。
-    - アーキテクチャは、ワークフロー雛形の `runner_for` と `architectures` ファイルだけが検査される。本文中の列挙（「amd64 と arm64」など）は検査されないので、正本を変えたら手で合わせる。
-    - CI ランナー名は正本と `runner_for` 以外に書かない。
+    - アーキテクチャは、ワークフロー雛形 `test-feature.yaml` の `RUNNERS` と、値を単一引用符で囲んだ `architectures:` の行（`test.yaml` 雛形のコメントやスキル中のテスト ジョブの例）だけが検査される。本文中の列挙（「amd64 と arm64」など）は検査されないので、正本を変えたら手で合わせる。
+    - CI ランナー名は正本と `RUNNERS` 以外に書かない。
   - 上流の新しいリリース（Ubuntu LTS、Debian stable、`devcontainers/base` の新しいイメージやメジャー バージョン、GitHub ホステッド ランナーの新しい Ubuntu 版）は自動では検出しない。気づいたら `/update-supported-distributions` スキルで更新する。
 
 ## 対象アーキテクチャ
 
 - amd64 と arm64 をサポートし、CI でそれぞれのネイティブ ランナーでテストする。CI でテストできないアーキテクチャはサポートしない。
-- 各 Feature は対象アーキテクチャを `test/<id>/architectures` に明示する。書かれていない場合の既定値は設けない。正本にアーキテクチャを足したときに、upstream にビルドがない Feature まで黙ってテスト対象に広がるのを防ぐため。
+- 各 Feature は対象アーキテクチャを、テスト ワークフロー `test.yaml` の `test-<id>` ジョブの `architectures` に明示する。再利用可能ワークフロー `test-feature.yaml` の `architectures` 入力は必須とし、既定値は設けない。正本にアーキテクチャを足したときに、upstream にビルドがない Feature まで黙ってテスト対象に広がるのを防ぐため。
+- テスト ワークフローは Feature ごとのジョブを YAML に書き並べる。`src/` から Feature を列挙して matrix に展開する方式は採らない。matrix には 1 つあたり 256 ジョブの上限があり、Feature 数 × アーキテクチャ数 × baseImage 数ですぐに達するため。ジョブや `tests-passed` の `needs` の書き漏れは CI では検出せず、`feature-reviewer` エージェントで検出する。このプラグインはエージェント経由で使うことを前提とし、手で Feature を追加した場合までは守らない。
 - upstream がビルドを公開していないアーキテクチャに限り、Feature の対象から外してよい。
 - 「テストされている」とは CI でテストされていることを指す。開発者の手元でのテストは、そのマシンのアーキテクチャしか確認できないので、根拠にしない。
 

@@ -1,6 +1,6 @@
 ---
 name: feature-testing
-description: This skill should be used when the user asks to "write a test for a feature", "add a scenario", "edit scenarios.json", "write test.sh", "add a negative test", "write duplicate.sh", "add an idempotency test", or otherwise works on files under `test/<feature>/` in a Dev Container Features repository. Explains how `devcontainer features test` discovers and runs tests and how to cover failure paths it cannot express.
+description: This skill should be used when the user asks to "write a test for a feature", "add a scenario", "edit scenarios.json", "write test.sh", "add a negative test", "write duplicate.sh", "add an idempotency test", "change the architectures a feature is tested on", or otherwise works on files under `test/<feature>/` or a Feature's job in the test workflow in a Dev Container Features repository. Explains how `devcontainer features test` discovers and runs tests and how to cover failure paths it cannot express.
 ---
 
 # Testing Dev Container Features
@@ -17,9 +17,8 @@ Tests live in `test/<id>/`, mirroring `src/<id>/`. They run with `devcontainer f
 | `test/<id>/duplicate.sh` | Duplicate | Installs the Feature twice, once with default options and once with other values; option values are exposed as `<OPTION>` and `<OPTION>__DEFAULT`. |
 | `test/_global/scenarios.json` | Global scenario | Scenarios spanning several Features. |
 | `test/<id>/negative-tests.md` | Manual | Failure cases the CLI cannot express, run by `docker run`. See below. |
-| `test/<id>/architectures`, `test/_global/architectures` | Configuration | Not read by the CLI. The test workflow runs the Feature's auto-generated, scenario, and duplicate tests once per architecture in `test/<id>/architectures`, and the global scenarios once per architecture in `test/_global/architectures`, each on a native runner. Negative tests are not run by the workflow. See below. |
 
-`test.sh` is mandatory for every Feature: the auto-generated run fails without it. So is `architectures`: the test workflow fails when it is missing. `test/_global/architectures` is likewise required when `test/_global/scenarios.json` exists.
+`test.sh` is mandatory for every Feature: the auto-generated run fails without it. So is a job in the test workflow, which names the architectures to test on (see "Test jobs" below); the global scenarios need one too.
 
 Make every test script executable, following the rule in the `new-feature` skill: `chmod +x`, then record the mode with `git add --chmod=+x <files>`, since Git does not pick up the bit on Windows or with `core.fileMode=false`. Tell the user that this stages the files.
 
@@ -34,11 +33,30 @@ Make every test script executable, following the rule in the `new-feature` skill
 
 Scenarios pin their own `image`, so they run once per architecture rather than once per base image. Spread scenarios across the supported releases listed in `supported-platforms.md` instead of putting all of them on one image, and use only images listed there. Release numbers in the examples of this skill are illustrations; take the current ones from that file.
 
-## architectures
+## Test jobs
 
-One architecture per line, using the names in the "Architectures" table of `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`. Blank lines and text after `#` are ignored. List every architecture there unless the upstream publishes no build for one (see the `feature-authoring` skill); the file is required even then, so that the architectures a Feature is tested on are always stated rather than implied. The test workflow fails on a missing or empty file and on a name that is not in the table. `examples/architectures` lists them all.
+The CLI does not decide where tests run; the test workflow does. `.github/workflows/test.yaml` has one job per Feature, named `test-<id>`, which calls the reusable workflow `.github/workflows/test-feature.yaml`:
 
-For `test/_global/architectures`, list only the architectures that every Feature used by the global scenarios supports.
+```yaml
+  test-mytool:
+    uses: ./.github/workflows/test-feature.yaml
+    with:
+      feature: mytool
+      architectures: '["amd64", "arm64"]'
+```
+
+`test-feature.yaml` runs the Feature's auto-generated and duplicate tests once per architecture and base image, and its scenarios once per architecture, each on a native runner of that architecture. Negative tests are not run by the workflow.
+
+`architectures` is a JSON array of names from the "Architectures" table of `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`, in single quotes. List every architecture there unless the upstream publishes no build for one (see the `feature-authoring` skill). The input is required and has no default, so that the architectures a Feature is tested on are always stated rather than implied. The workflow fails on an empty list, a duplicate, or a name that is not in the table.
+
+When `test/_global/scenarios.json` exists, a job named `test-global` does the same with `feature: _global`. List only the architectures that every Feature used by the global scenarios supports.
+
+Every job must also be listed under `needs` of the `tests-passed` job, which aggregates the results into the check that branch rules require. Nothing in CI checks these jobs: a Feature without a `test-<id>` job is never tested, and a job missing from `needs` does not block a merge when it fails, while CI stays green. After any of the changes below, run the `feature-reviewer` agent, which checks them.
+
+- **Adding a Feature**: add its `test-<id>` job and add `test-<id>` to `needs` of `tests-passed`, creating `needs` when it is absent.
+- **Removing a Feature**: remove its job and its entry in `needs`, and check whether the global scenarios used it.
+- **Renaming a Feature**: change the job name, `feature`, and the entry in `needs`.
+- **Changing the architectures of a Feature**: change the `uname -m` branches of `install.sh` and the Limitations of `NOTES.md` together with `architectures`, following the `feature-authoring` skill, since all three must agree. Leave out an architecture only when the upstream publishes no build for it. When the global scenarios use the Feature, narrow `architectures` of `test-global` to match.
 
 ## Writing assertion scripts
 
@@ -110,5 +128,4 @@ Whenever install.sh contains a failure path that no test covers, add a comment n
 - **`examples/test.sh`** — default-options test.
 - **`examples/scenarios.json`** and **`examples/non_root_user.sh`** — a scenario with a non-root remote user.
 - **`examples/duplicate.sh`** — idempotency test.
-- **`examples/architectures`** — the architectures file of a Feature that supports every architecture.
 - **`examples/negative-tests.md`** — manual failure cases in the format `run-feature-tests` executes.

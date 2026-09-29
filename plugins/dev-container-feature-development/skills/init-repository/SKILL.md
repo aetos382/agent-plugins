@@ -17,7 +17,7 @@ Reply to the user in the language they use. This skill writes files in the worki
 
    | Role | How to recognize it |
    |---|---|
-   | Test | runs `devcontainer features test` |
+   | Test | runs `devcontainer features test`, or calls a reusable workflow that does |
    | Release | uses `devcontainers/action` with `publish-features: "true"` |
    | Validate | uses `devcontainers/action` with `validate-only: "true"`, or runs `shellcheck` |
 
@@ -69,6 +69,7 @@ Map each template to its destination:
 | Template | Destination |
 |---|---|
 | `assets/workflows/test.yaml` | `.github/workflows/test.yaml` |
+| `assets/workflows/test-feature.yaml` | `.github/workflows/test-feature.yaml` |
 | `assets/workflows/release.yaml` | `.github/workflows/release.yaml` |
 | `assets/workflows/validate.yaml` | `.github/workflows/validate.yaml` |
 | `assets/devcontainer/devcontainer.json` | `.devcontainer/devcontainer.json` |
@@ -91,22 +92,26 @@ For each destination, decide:
 
 - **Create** when neither the file nor a workflow with the same role exists.
 - **Update** when a file with the same role exists. Keep its file name (for example an existing `validate.yml`). Merge the template's substance into it rather than replacing it: preserve jobs, steps, Features, and settings the template does not have, and explain each change. The substance to carry over is:
-  - Test workflow: Features discovered from `src/` instead of a hard-coded list; a `baseImage` matrix equal to the "CI base images" list in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`; test targets built from each `test/<id>/architectures` (and `test/_global/architectures`), each running on the runner that the "Architectures" table of that file names, with no default for a missing file; matrix values passed through `env`; a job for `test/_global` scenarios; the `tests-passed` aggregate job.
+  - Test workflow: one `test-<id>` job per Feature, and `test-global` for `test/_global` scenarios, each calling the reusable `test-feature.yaml` with the Feature's ID and its architectures as a required input without a default; the `tests-passed` aggregate job, which needs every job and requires each to succeed. In `test-feature.yaml`: a `baseImage` matrix equal to the "CI base images" list in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`; each architecture running on the runner that the "Architectures" table of that file names; inputs and matrix values passed through `env`.
   - Release workflow: publishing with `generate-docs`, followed by the documentation pull request step; runs only on the default branch, one at a time.
   - Validate workflow: `validate-only` and ShellCheck over `git ls-files '*.sh'`, with the `validation-passed` aggregate job.
   - Actions pinned to commit SHAs with the tag in a comment.
   - Dependency updates: GitHub Actions and the dev container's Features are both covered. With an existing Renovate configuration, check what it covers instead of rewriting it, and propose only the missing pieces.
 - **Keep** when the existing file already satisfies the template.
 
-Existing Features without `test/<id>/architectures`, and `test/_global` when it has `scenarios.json` but no `architectures`: the test workflow fails on them, so plan to create each file. Propose its contents from the architectures in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`, narrowed by what the Feature can install on each:
+The test workflow template has no Feature jobs. Keep the existing `test-<id>` jobs and `test-global` of the test workflow as they are, including their `architectures` and their entries in `needs`. This skill does not change the architectures an existing Feature is tested on, because that change also belongs in the Feature's `install.sh` and `NOTES.md`; the "Test jobs" section of the `feature-testing` skill covers it. For each Feature without a job, plan a `test-<id>` job in the form that the template's comment and that section show, plus `test-global` when `test/_global/scenarios.json` exists and the job does not, and list every job under `needs` of `tests-passed`. With no Feature yet, `tests-passed` has no `needs`; the `new-feature` skill adds them.
+
+When an existing job leaves out an architecture of `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`, list the job and the architecture in the plan as information, without changing the job, so that the user can decide separately whether to extend the Feature.
+
+Choose the architectures of each new job as follows. When the repository has `test/<id>/architectures` and `test/_global/architectures` files, which an earlier version of this plugin read, take each job's architectures from its file, one name per line, and plan to delete the files. Otherwise, propose them from the architectures in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`, narrowed by what the Feature can install on each:
 
 - When `install.sh` branches on `uname -m`, keep the supported architectures that the branches accept, and point out any that they reject, since the Feature is then not tested on it.
 - When it does not branch, the Feature is architecture-independent as far as the script goes; start from all supported architectures.
 - Either way, check that what the Feature installs exists for each proposed architecture, as the `new-feature` skill does: the upstream's release assets for a download, or the package's architectures for an apt repository, since a third-party repository may publish amd64 only. Leave out an architecture only when that check shows it has no build, and say which check that was.
 
-For `test/_global`, propose the architectures common to the Features its scenarios use. When the existing workflow did not run the Features on arm64, note that the first run there may still fail.
+For a new `test-global`, propose the architectures common to the Features its scenarios use. When the existing workflow did not run the Features on arm64, note that the first run there may still fail.
 
-These files and the updated test workflow must land in the same commit or pull request; the workflow fails without them.
+The test workflow and the reusable workflow must land in the same commit or pull request: the test workflow calls the reusable one.
 
 `README.md` in an existing repository: add only what is missing, typically the Features table. Fill the table with one row per Feature, using `name` or `id` linked to `src/<id>` and `description` from its `devcontainer-feature.json`.
 
@@ -120,7 +125,8 @@ Write the approved files. Then check them:
 
 - `jq empty` on every JSON file written.
 - `actionlint` on the workflows, when it is installed.
-- For existing Features, confirm that each `test/<id>/test.sh` and `test/<id>/architectures` exists, since the discovered matrix now tests every Feature under `src/`. List any that are missing and offer the `feature-testing` skill.
+- For existing Features, confirm that each `test/<id>/test.sh` exists, since each now has a `test-<id>` job, whose auto-generated test fails without it. List any that are missing and offer the `feature-testing` skill.
+- Confirm the jobs of the test workflow, since nothing in CI checks them: every Feature under `src/` has a `test-<id>` job calling `test-feature.yaml` with `feature: <id>`, `test-global` exists when `test/_global/scenarios.json` does, no job tests anything else, and `tests-passed` needs every other job. `test-feature.yaml` itself checks the architectures when it runs.
 
 ## 6. Hand over the manual steps
 

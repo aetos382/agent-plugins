@@ -30,7 +30,7 @@ Last checked against upstream release information: 2026-09-18.
 
 ## CI base images
 
-The test workflow's `baseImage` matrix lists every image above, in this order:
+The `baseImage` matrix of the reusable test workflow (`test-feature.yaml`) lists every image above, in this order:
 
 ```
 debian:12
@@ -43,7 +43,7 @@ mcr.microsoft.com/devcontainers/base:3-ubuntu26.04
 
 ## Architectures
 
-Each Feature lists the architectures it supports in `test/<id>/architectures`, and the global scenarios in `test/_global/architectures`, using the names in the first column. The test workflow runs each of them on the runner in the last column.
+Each Feature lists the architectures it supports in `architectures` of its job in the test workflow, and the global scenarios in that of `test-global`, using the names in the first column. The reusable test workflow runs each of them on the runner in the last column.
 
 | Architecture | `uname -m` | CI runner |
 |---|---|---|

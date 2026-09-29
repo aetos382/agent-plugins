@@ -17,7 +17,6 @@ src/<id>/
   README.md                   # generated at release time; never edit by hand
   (other files)               # packaged together with install.sh
 test/<id>/
-  architectures               # architectures CI tests, one per line
   test.sh                     # default options, run on every base image
   scenarios.json, <name>.sh   # option and environment scenarios
   <name>/                     # extra build files for a scenario (e.g. a Dockerfile)
@@ -38,7 +37,7 @@ Every Feature must work on the latest two Ubuntu LTS releases and on Debian stab
 
 Other distributions are supported only when doing so costs no more than a package-manager branch. Never state or imply support that has not been tested: `NOTES.md` must say that only the supported distributions are tested. A platform counts as tested only when CI runs it; a local run covers just the developer's machine.
 
-Every Feature supports every architecture in `references/supported-platforms.md` and lists them in `test/<id>/architectures`, which the test workflow reads to run the tests on a native runner of each architecture. The file is required even when it lists them all, so that adding an architecture to the plugin later does not silently extend Features whose upstream has no build for it. Leave an architecture out only when the upstream publishes no build for it; then `install.sh` fails on it with a message saying so, and `NOTES.md` explains the gap. Architectures missing from `references/supported-platforms.md` are not supported at all, because CI cannot test them.
+Every Feature supports every architecture in `references/supported-platforms.md` and lists them in `architectures` of its `test-<id>` job in the test workflow, which runs the tests on a native runner of each architecture (see the `feature-testing` skill). The list is required even when it names them all, so that adding an architecture to the plugin later does not silently extend Features whose upstream has no build for it. Leave an architecture out only when the upstream publishes no build for it; then `install.sh` fails on it with a message saying so, and `NOTES.md` explains the gap. Architectures missing from `references/supported-platforms.md` are not supported at all, because CI cannot test them.
 
 ## Dependency policy
 
@@ -57,7 +56,7 @@ Follow these rules. Detailed patterns with code are in `references/install-scrip
 2. **Root check.** Fail early with a clear message when `id -u` is not 0.
 3. **Options.** Each option arrives as an upper-cased environment variable (`myOption` → `MYOPTION`, non-word characters become `_`). Read with a default that matches `devcontainer-feature.json`, e.g. `VERSION="${VERSION:-latest}"`. Validate values before use; free-form strings must never reach a path or command unchecked.
 4. **Messages.** Prefix every message with the Feature ID (`<id>: ...`) and send errors to stderr. State what failed and what the user can do about it.
-5. **Architecture.** Detect with `uname -m`, not `dpkg --print-architecture`, so detection does not depend on Debian tooling. Accept exactly the architectures in `test/<id>/architectures`, and fail with a message for any other value.
+5. **Architecture.** Detect with `uname -m`, not `dpkg --print-architecture`, so detection does not depend on Debian tooling. Accept exactly the architectures in the Feature's test job, and fail with a message for any other value.
 6. **Downloads.** Use `curl -fsSL --retry 3`. Verify every downloaded artifact against a checksum file or signature that the upstream publishes separately from the artifact. Prefer signatures, and pin the signing key's fingerprint in the script. A checksum file from the same release protects against corrupted downloads but not against a compromised release; when that is all the upstream offers, use it and say so in `NOTES.md`. When a version is pinned, confirm the installed binary reports that version.
 7. **Temporary files.** Create them with `mktemp -d` and remove them in an `EXIT` trap.
 8. **Users.** The script runs as root. Use `_REMOTE_USER` / `_REMOTE_USER_HOME` for per-user setup, `chown` what is created in a user's home, and never assume the user is `root` or `vscode`.
@@ -83,7 +82,7 @@ Use these sections, omitting any that would be empty:
 
 - `## How it works` — what the script installs or changes, where, and why that method was chosen.
 - `## Requirements` — dependencies; what `apt-get` installs automatically; what images without `apt-get` must provide.
-- `## Limitations` — tested distributions (from `references/supported-platforms.md`) and the statement that other distributions are untested; tested architectures (those in `test/<id>/architectures`), and why any architecture of `references/supported-platforms.md` is missing; known gaps.
+- `## Limitations` — tested distributions (from `references/supported-platforms.md`) and the statement that other distributions are untested; tested architectures (those in the Feature's test job), and why any architecture of `references/supported-platforms.md` is missing; known gaps.
 
 `examples/NOTES.md` shows the expected shape.
 
