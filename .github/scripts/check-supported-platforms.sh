@@ -2,7 +2,9 @@
 # Checks that the dev-container-feature-development plugin and its development rules (.claude/rules)
 # agree with their source of truth, skills/feature-authoring/references/supported-platforms.md.
 # Release numbers and image names are checked wherever they appear. Architectures are checked only
-# in the workflow template's runner_for and in architectures files; prose that lists them is not.
+# in RUNNERS of the test-feature.yaml template and in "architectures:" lines whose value is in
+# single quotes, wherever those appear in the plugin or the rules (such as the example test jobs in
+# the test.yaml template and in the feature-testing skill); prose that lists them is not.
 # Needs no network access; run on every pull request.
 #
 # Usage: check-supported-platforms.sh
@@ -34,7 +36,7 @@ grep_matches() {
   [ "${status}" -le 1 ] || die "grep failed with status ${status}: grep $*"
 }
 
-for command in git awk; do
+for command in git awk jq; do
   command -v "${command}" >/dev/null 2>&1 || die "'${command}' is required but not installed."
 done
 
@@ -42,7 +44,7 @@ done
 repo_root="$(git rev-parse --show-toplevel)"
 plugin_dir="${repo_root}/plugins/dev-container-feature-development"
 source_file="${plugin_dir}/skills/feature-authoring/references/supported-platforms.md"
-workflow_template="${plugin_dir}/skills/init-repository/assets/workflows/test.yaml"
+workflow_template="${plugin_dir}/skills/init-repository/assets/workflows/test-feature.yaml"
 rules_file="${repo_root}/.claude/rules/dev-container-feature-development.md"
 source_display="${source_file#"${repo_root}/"}"
 
@@ -139,15 +141,23 @@ check_consistency() {
   fi
 
   # The workflow template maps the same architectures to the same runners, in the same order.
-  template_runners="$(awk '
-    /^ *runner_for\(\) \{/ { section = 1; next }
-    section && /^ *[a-z0-9_]+\) echo '\''[^'\'']*'\'' ;;$/ {
-      sub(/^ */, ""); sub(/\) echo '\''/, " "); sub(/'\'' ;;$/, ""); print; next
-    }
-    section && /^ *\}/ { exit }
+  # RUNNERS is a YAML block scalar holding a JSON object: the lines after the key that are blank or
+  # indented deeper than it. The object is parsed as JSON rather than matched line by line, so that
+  # no way of formatting an entry lets it slip past the comparison.
+  local template_display runners_json template_runners
+  template_display="${workflow_template#"${repo_root}/"}"
+  runners_json="$(awk '
+    section && NF && match($0, /^ */) && RLENGTH <= indent { exit }
+    section { print; next }
+    /^ *RUNNERS: \|$/ { section = 1; match($0, /^ */); indent = RLENGTH }
   ' "${workflow_template}")"
-  if [ "${template_runners}" != "${architecture_rows}" ]; then
-    add_problem "\`${workflow_template#"${repo_root}/"}\`: the runners in \`runner_for\` differ from the architectures in \`${source_display}\`."
+  if template_runners="$(jq -r 'to_entries[] | "\(.key) \(.value)"' <<< "${runners_json}" 2>/dev/null)" &&
+    [ -n "${template_runners}" ]; then
+    if [ "${template_runners}" != "${architecture_rows}" ]; then
+      add_problem "\`${template_display}\`: the runners in \`RUNNERS\` differ from the architectures in \`${source_display}\`."
+    fi
+  else
+    add_problem "\`${template_display}\`: \`RUNNERS\` is missing or is not a JSON object that maps architectures to runners."
   fi
 
   # Every release number or image named anywhere else must be a supported one.
@@ -188,16 +198,25 @@ check_consistency() {
         add_problem "\`${file}:${line}\`: \`${match}\` is not a supported Debian release."
     done <<< "${MATCHES}"
 
-    # An architectures file (for example in the examples) names only supported architectures.
-    if [ "${file##*/}" = architectures ]; then
-      content="$(sed 's/#.*//' "${path}")"
-      grep_matches -noE '[^[:space:]]+' <<< "${content}"
-      while IFS=: read -r line match; do
-        [ -n "${line}" ] || continue
-        contains "${architectures}" "${match}" ||
-          add_problem "\`${file}:${line}\`: \`${match}\` is not a supported architecture."
-      done <<< "${MATCHES}"
-    fi
+    # The architectures of an example test job, in the workflow template or the skills, are supported
+    # ones. Only values in single quotes are checked; among them, one that test-feature.yaml would
+    # reject is reported rather than skipped.
+    grep_matches -noE "architectures: '[^']*'" "${path}"
+    while IFS=: read -r line match; do
+      [ -n "${line}" ] || continue
+      value="${match#*\'}"
+      value="${value%\'}"
+      # Slurped, so that an empty value or several JSON values in a row are rejected.
+      if ! listed="$(jq -r -s 'if length == 1 and (.[0] | type == "array" and length > 0 and all(type == "string") and length == (unique | length)) then .[0][] else error end' <<< "${value}" 2>/dev/null)"; then
+        add_problem "\`${file}:${line}\`: \`${value}\` is not a non-empty JSON array of distinct architectures."
+        continue
+      fi
+      while IFS= read -r arch; do
+        [ -n "${arch}" ] || continue
+        contains "${architectures}" "${arch}" ||
+          add_problem "\`${file}:${line}\`: \`${arch}\` is not a supported architecture."
+      done <<< "${listed}"
+    done <<< "${MATCHES}"
   done <<< "${files}"
 
   if [ -n "${problems}" ]; then

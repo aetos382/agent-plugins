@@ -67,6 +67,46 @@ jobs:
       - name: "Check supported platforms for consistency"
         run: bash .github/scripts/check-supported-platforms.sh
 
+  # Lints this repository's workflows and the workflow templates that plugins ship. actionlint also
+  # runs ShellCheck, which its image includes, on the Bash embedded in run steps; the shellcheck job
+  # above sees only *.sh files. The image is pinned by digest and updated by hand. It comes from the
+  # kjanat/actionlint fork, since rhysd/actionlint has had no release since v1.7.12 and does not know
+  # newer runner labels such as ubuntu-26.04 (see rhysd/actionlint#719).
+  actionlint:
+    runs-on: ubuntu-latest
+    env:
+      ACTIONLINT_IMAGE: kjanat/actionlint:1.17.0@sha256:d484cccadf56b6a356466ade9af4c8e05c5dce1badaf0a9ecd0d7639d68d9c92
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: "Lint the workflows of this repository"
+        run: docker run --rm -v "${PWD}:/repo" -w /repo "${ACTIONLINT_IMAGE}" -color
+
+      # The templates are linted as a Git repository of their own, laid out as init-repository writes
+      # them, so that calls to their reusable workflows resolve. Placeholders become a dummy ref, and
+      # a Feature job is added to test.yaml, which has none, so that its call is checked against
+      # test-feature.yaml. yq is preinstalled on the GitHub-hosted Ubuntu runners.
+      - name: "Lint the workflow templates of dev-container-feature-development"
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          templates=(plugins/dev-container-feature-development/skills/init-repository/assets/workflows/*.yaml)
+          if [ "${#templates[@]}" -eq 0 ]; then
+            echo '::error::No workflow template found. The file selection is broken.' >&2
+            exit 1
+          fi
+          root="${RUNNER_TEMP}/workflow-templates"
+          mkdir -p "${root}/.github/workflows"
+          git init -q "${root}"
+          for template in "${templates[@]}"; do
+            sed -E 's/__[A-Z_]+__/v0/g' "${template}" > "${root}/.github/workflows/${template##*/}"
+          done
+          yq -i '
+            .jobs = {"test-example": {"uses": "./.github/workflows/test-feature.yaml", "with": {"feature": "example", "architectures": "[\"amd64\"]"}}} + .jobs
+            | .jobs.tests-passed.needs = ["test-example"]
+          ' "${root}/.github/workflows/test.yaml"
+          docker run --rm -v "${root}:/repo" -w /repo "${ACTIONLINT_IMAGE}" -color
+
   # Aggregates the jobs above into a single check with a stable name, so that a branch ruleset can
   # require it without being updated whenever a job is added or renamed here.
   validation-passed:
@@ -76,9 +116,11 @@ jobs:
       - plugin-validate
       - shellcheck
       - platforms
+      - actionlint
     steps:
       - name: "Check the results of the validation jobs"
         run: |
           test '${{ needs.plugin-validate.result }}' = success \
             && test '${{ needs.shellcheck.result }}' = success \
-            && test '${{ needs.platforms.result }}' = success
+            && test '${{ needs.platforms.result }}' = success \
+            && test '${{ needs.actionlint.result }}' = success

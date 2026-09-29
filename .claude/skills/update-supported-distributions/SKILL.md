@@ -66,8 +66,8 @@ dev-container-feature-development の対象ディストリビューションを�
 
    | 箇所 | 置き換え方 |
    |---|---|
-   | Feature リポジトリ用のワークフロー雛形 `skills/init-repository/assets/workflows/test.yaml` の `baseImage` | 正本の「CI base images」と同じ内容、同じ並びにする |
-   | 同じ雛形の `runner_for` | 正本の「Architectures」表の CI runner 列と同じにする |
+   | Feature リポジトリ用のワークフロー雛形 `skills/init-repository/assets/workflows/test-feature.yaml` の `baseImage` | 正本の「CI base images」と同じ内容、同じ並びにする |
+   | 同じ雛形の `RUNNERS` | 正本の「Architectures」表の CI runner 列と同じにする |
    | 対象リリースや非 root テスト イメージを列挙した文 | 正本のとおりに列挙し直す |
    | サンプルや説明の中で、対象から外れたリリースを 1 つ使っている箇所 | 同じディストリビューションのサポート対象のうち、最も古いリリースに置き換える（例: `debian:12` → `debian:13`）。説明の内容がそのリリース固有の事情に依存していれば、置き換えずに報告する |
    | 対象から外れた非 root テスト イメージ | 残っている非 root テスト イメージのうち、最も新しいものに置き換える |
@@ -90,4 +90,4 @@ dev-container-feature-development の対象ディストリビューションを�
 - 追加・削除したリリースとイメージ、変更した CI ランナー
 - 手順 4 で行った置き換えのうち、機械的でないもの
 - まだ devcontainers/base に variant がなく、非 root テスト イメージに入れられなかった Ubuntu 版（公開後にこのスキルを再実行すれば追加される）
-- 次に行うこと: コミットとプル リクエストの作成（指示があれば行う）。マージ後、各 Feature リポジトリで `/dev-container-feature-development:init-repository` を再実行してテスト ワークフローの `baseImage` を更新し、`/dev-container-feature-development:run-feature-tests` で全 Feature をテストし、各 Feature の `NOTES.md` のテスト済みディストリビューションを更新する。
+- 次に行うこと: コミットとプル リクエストの作成（指示があれば行う）。マージ後、各 Feature リポジトリで `/dev-container-feature-development:init-repository` を再実行して再利用可能ワークフロー `test-feature.yaml` の `baseImage` と `RUNNERS` を更新し、`/dev-container-feature-development:run-feature-tests` で全 Feature をテストし、各 Feature の `NOTES.md` のテスト済みディストリビューションを更新する。
