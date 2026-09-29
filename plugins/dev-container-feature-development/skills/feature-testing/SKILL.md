@@ -17,9 +17,9 @@ Tests live in `test/<id>/`, mirroring `src/<id>/`. They run with `devcontainer f
 | `test/<id>/duplicate.sh` | Duplicate | Installs the Feature twice, once with default options and once with other values; option values are exposed as `<OPTION>` and `<OPTION>__DEFAULT`. |
 | `test/_global/scenarios.json` | Global scenario | Scenarios spanning several Features. |
 | `test/<id>/negative-tests.md` | Manual | Failure cases the CLI cannot express, run by `docker run`. See below. |
-| `test/<id>/architectures`, `test/_global/architectures` | Configuration | Not read by the CLI. The test workflow runs every test above once per listed architecture, on a native runner. See below. |
+| `test/<id>/architectures`, `test/_global/architectures` | Configuration | Not read by the CLI. The test workflow runs the Feature's auto-generated, scenario, and duplicate tests once per architecture in `test/<id>/architectures`, and the global scenarios once per architecture in `test/_global/architectures`, each on a native runner. Negative tests are not run by the workflow. See below. |
 
-`test.sh` is mandatory for every Feature: the auto-generated run fails without it. So is `architectures`: the test workflow fails when it is missing, and so does `test/_global/architectures` when `test/_global/scenarios.json` exists.
+`test.sh` is mandatory for every Feature: the auto-generated run fails without it. So is `architectures`: the test workflow fails when it is missing. `test/_global/architectures` is likewise required when `test/_global/scenarios.json` exists.
 
 Make every test script executable, following the rule in the `new-feature` skill: `chmod +x`, then record the mode with `git add --chmod=+x <files>`, since Git does not pick up the bit on Windows or with `core.fileMode=false`. Tell the user that this stages the files.
 
