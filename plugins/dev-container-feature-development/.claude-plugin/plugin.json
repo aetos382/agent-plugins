@@ -1,6 +1,6 @@
 {
   "name": "dev-container-feature-development",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Skills for authoring, testing, and releasing Dev Container Features.",
   "author": {
     "name": "aetos382"

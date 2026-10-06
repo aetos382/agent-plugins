@@ -14,7 +14,7 @@ FEATURE_ID='mytool'
 VERSION="${VERSION:-latest}"
 ```
 
-Keep the defaults identical to those in `devcontainer-feature.json`. The CLI always exports every option, so the fallback only matters when the script is run by hand (for example in negative tests).
+Keep the defaults identical to those in `devcontainer-feature.json`. The CLI always exports every option, so the fallback applies only when the user set an option to an empty value, and when the script is run directly (for example in negative tests).
 
 ## Root check
 
@@ -66,6 +66,8 @@ if [ -n "${MISSING_PACKAGES}" ]; then
   rm -rf /var/lib/apt/lists/*
 fi
 ```
+
+Remove `/var/lib/apt/lists/*` before the script ends whenever it ran `apt-get update`, whatever the update was for. An update that installs nothing, such as one that only confirms that rewritten apt sources are reachable, leaves the package lists in the image layer all the same, and Features that run later do their own `apt-get update` anyway.
 
 Packages needed only during installation may be purged afterward, but only when this script installed them. Never remove something the image already had.
 
@@ -143,7 +145,33 @@ esac
 
 ## Validating options
 
-Validate every free-form option before it reaches a URL, a path, or a command. Check the resolved value, not only the user's input, since a `latest` lookup can return something unexpected too. Allow only the characters the value can legitimately contain:
+Validate every option, boolean and `enum` options included. The CLI does not enforce `type` or `enum` at build time (see `feature-json.md`), so a typo in the user's `devcontainer.json` reaches the script as written, and the script is the only place that can reject it. Fail on an invalid value; never treat it as false or as the default. The one exception is an empty value, which the `${VAR:-default}` read in the header replaces with the default.
+
+A boolean accepts `true` and `false` only. Without the check, a test such as `[ "${INSTALLCOMPLETIONS}" = 'true' ]` silently treats `True` as false:
+
+```sh
+case "${INSTALLCOMPLETIONS}" in
+  true | false) ;;
+  *)
+    echo "${FEATURE_ID}: invalid installCompletions '${INSTALLCOMPLETIONS}'; expected true or false." >&2
+    exit 1
+    ;;
+esac
+```
+
+Declare a closed set of values as `enum` in `devcontainer-feature.json`, so that editors offer and check them, and accept exactly the same values in the script:
+
+```sh
+case "${CHANNEL}" in
+  stable | beta) ;;
+  *)
+    echo "${FEATURE_ID}: invalid channel '${CHANNEL}'; expected stable or beta." >&2
+    exit 1
+    ;;
+esac
+```
+
+Validate a free-form option before it reaches a URL, a path, or a command. Check the resolved value, not only the user's input, since a `latest` lookup can return something unexpected too. Allow only the characters the value can legitimately contain:
 
 ```sh
 case "${VERSION}" in
@@ -154,7 +182,7 @@ case "${VERSION}" in
 esac
 ```
 
-Rejecting `/` also rejects `..` path segments, so the value cannot escape a temporary directory or change the path of a URL. For options with a closed set of values, use `enum` in `devcontainer-feature.json` and still check the value in the script, because a script run by hand bypasses the schema.
+Rejecting `/` also rejects `..` path segments, so the value cannot escape a temporary directory or change the path of a URL.
 
 ## Temporary directory
 

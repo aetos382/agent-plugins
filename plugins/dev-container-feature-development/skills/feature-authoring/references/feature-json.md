@@ -46,8 +46,10 @@ Summary of the [Dev Container Features specification](https://containers.dev/imp
 }
 ```
 
-- `type` is `string` or `boolean`. Boolean values arrive in the script as the strings `true` / `false`.
-- `enum` accepts only the listed values; `proposals` suggests values but accepts anything. Use one or the other.
+- `type` is `string` or `boolean`. Every value arrives in the script as a string; a boolean written correctly arrives as `true` or `false`.
+- `enum` lists the values of a closed set; `proposals` suggests values for an open one. Use one or the other.
+- The CLI enforces neither `type` nor `enum`. It merges what the user wrote over the defaults and passes the result on, without an error or a warning: `"True"` for a boolean option, or a value that `enum` does not list, reaches `install.sh` as written. Neither property affects the build: they feed editors (completion and diagnostics) and the generated README, so `install.sh` has to validate every option itself; see "Validating options" in `install-script.md`.
+- The CLI writes each value unescaped into an env file as `NAME="value"`, and a shell reads that file. A `"`, a `$(...)`, or a backquote in a value is therefore interpreted by the shell before `install.sh` sees it. This crosses no security boundary, because whoever writes `devcontainer.json` already controls the build, but it means that such a value does not arrive literally.
 - The option ID becomes the environment variable: non-word characters are replaced with `_`, leading digits and underscores are replaced with `_`, and the result is upper-cased. `installCompletions` → `INSTALLCOMPLETIONS`.
 - Every option is exported, with its default when the user did not set it.
 - A user may write `"ghcr.io/<owner>/<repo>/<id>": "1.2"` as a shorthand for `{ "version": "1.2" }`. Name the version option `version` so this works.
