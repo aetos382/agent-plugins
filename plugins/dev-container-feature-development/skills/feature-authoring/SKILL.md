@@ -41,13 +41,13 @@ Every Feature supports every architecture in `references/supported-platforms.md`
 
 ### Features for one distribution
 
-Some Features have no meaning on part of the supported platforms. One that rewrites Ubuntu's apt sources has nothing to rewrite on Debian. Such a Feature need not do its work there, as long as it follows these rules:
+Some Features have no meaning on part of the supported platforms. One that adds a Launchpad PPA has nothing to add on Debian, because PPAs publish packages for Ubuntu releases only. Such a Feature need not do its work there, as long as it follows these rules:
 
 - With default options, change nothing and succeed, so that the auto-generated test passes on every base image.
 - When an option asks for the work on a distribution the Feature is not for, fail with an error that names the distributions it is for. The base image is fixed by `devcontainer.json`, so every build gets the same result, and stopping it is right.
 - In `NOTES.md` Limitations, name the distributions the Feature is for and say why the others are out of scope.
 
-The same Feature can meet a supported architecture where there is nothing to act on: Ubuntu's arm64 images take their packages from another host than its amd64 images do. There, warn and change nothing instead of failing, because one `devcontainer.json` is built on both architectures and a failure would lock out the users of one. Keep the architecture in `architectures`, test the no-op, and describe it in Limitations.
+Any Feature, not only one for a single distribution, can meet a supported architecture where there is nothing to act on: one that points apt at a mirror finds, on Ubuntu's arm64 images, another host than the one it replaces. There, warn and change nothing instead of failing, because one `devcontainer.json` is built on both architectures and a failure would lock out the users of one. Keep the architecture in `architectures`, test the no-op, and describe it in Limitations.
 
 Do not stretch this to a tool whose upstream publishes no build for an architecture. That case fails, as described above: the user asked for the tool, and a build that succeeds without it only postpones the error to the moment the command is missing. The test is whether doing nothing leaves the container as the user expects.
 

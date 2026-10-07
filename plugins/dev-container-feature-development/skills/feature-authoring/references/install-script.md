@@ -100,8 +100,8 @@ List the tested architectures in `NOTES.md`.
 A Feature that only has meaning on one distribution (see "Features for one distribution" in the skill) does nothing by default and checks the distribution only once an option asks for the work:
 
 ```sh
-if [ -z "${MIRROR}" ]; then
-  echo "${FEATURE_ID}: 'mirror' is empty; leaving apt sources unchanged."
+if [ -z "${PPA}" ]; then
+  echo "${FEATURE_ID}: 'ppa' is empty; nothing to add."
   exit 0
 fi
 
@@ -116,11 +116,11 @@ fi
 
 Validate every option before the first of these exits, the `exit 0` for the empty default included (see "Validating options"). An invalid value is an error on every distribution, also when the Feature goes on to do nothing.
 
-On a supported architecture where there is nothing to act on, warn and change nothing rather than fail:
+On a supported architecture where there is nothing to act on, warn and change nothing rather than fail. A Feature that replaces the default host in apt sources meets this on Ubuntu's arm64 images, which name another host:
 
 ```sh
 if [ "${CHANGED}" -eq 0 ]; then
-  echo "${FEATURE_ID}: no default Ubuntu apt sources found; leaving apt sources unchanged." >&2
+  echo "${FEATURE_ID}: no apt source for the default host found; '${MIRROR}' is NOT in effect." >&2
   exit 0
 fi
 ```

@@ -59,7 +59,8 @@ When `test/<id>/duplicate.sh` exists and `--skip-duplicated` is not given, the C
 - **Order.** `install.sh` runs with the picked values first and with the defaults last. A check for a Feature whose later run wins therefore expects the result of the defaults.
 - **Picked values.** A boolean gets the opposite of its default. A string with `enum` or `proposals` gets the first listed value that is not the default (a random one with `--permit-randomization`). A string with neither keeps its default, and `<OPTION>` is not set.
 - **No second run.** When no option has another value to pick, both entries are the same and the CLI runs `install.sh` once. The test then passes without testing anything. Give at least one behavior-changing option a second value in `enum` or `proposals`, and make `duplicate.sh` check that `<OPTION>` differs from `<OPTION>__DEFAULT`.
-- **Every base image.** The duplicate test runs wherever the auto-generated test runs, with a non-default option. A Feature that refuses its option on some of the base images (see "Features for one distribution" in the `feature-authoring` skill) therefore cannot have one.
+- **Every base image.** The duplicate test runs wherever the auto-generated test runs, with the picked values. A Feature for which a picked value fails on some of the base images therefore cannot have one: a Feature for one distribution (see the `feature-authoring` skill), or an option whose valid values depend on the base image.
+- **Always the defaults last.** The CLI cannot run a Feature twice with values set. When that is what needs testing, as for a Feature whose defaults do nothing, `duplicate.sh` shows little; use a case in `negative-tests.md`.
 
 ## Debugging a failed build
 

@@ -49,7 +49,7 @@ Then the tests, following the `feature-testing` skill:
 
 - `test/<id>/test.sh` for the default options.
 - `test/<id>/scenarios.json` with a scenario per behavior-changing option value, a `non_root_user` scenario when anything touches a user's environment, and, when the Feature installs dependencies, a bare-image scenario that exercises that installation. Spread scenarios across the supported releases.
-- `test/<id>/duplicate.sh` when options change what gets installed or configured, except for a Feature for one distribution (see the `feature-testing` skill).
+- `test/<id>/duplicate.sh` when options change what gets installed or configured, unless the duplicate test cannot exercise the Feature (see "What to cover" in the `feature-testing` skill).
 - `test/<id>/negative-tests.md` for every failure path in `install.sh` that tests cannot express.
 
 Make `install.sh` and every test script executable, so that they can be run directly and match the convention of published Features. Use `chmod +x`, then record the mode with `git add --chmod=+x <files>`: on Windows, or with `core.fileMode=false`, Git does not pick up the bit from the file system. Tell the user that this stages the files.

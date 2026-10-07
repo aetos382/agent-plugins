@@ -19,7 +19,7 @@ Feature 実行環境となる Dev Container の OS について。
 - Ubuntu の最新および 1 つ前の LTS リリースと、Debian の stable および oldstable は必ずサポートする。非 root ユーザーでのテストには、サポート対象の各 Ubuntu LTS について、`mcr.microsoft.com/devcontainers/base` のその版の variant を持つ最新メジャー バージョンを使う。
   - `devcontainers/base` の Ubuntu 版と Debian 版は別々のイメージ定義からビルドされ、バージョン番号も別々に付く。メジャー バージョンは片方の系列にしか当てはまらない（例：`3` は Ubuntu 版のメジャー バージョンで、Debian の variant はない）。
 - その他の Linux ディストリビューションについては、パッケージ マネージャーの分岐を足す程度で済む場合のみサポートする。
-- 目的が一部のディストリビューションでしか意味を持たない Feature（Ubuntu の apt ソースを書き換えるものなど）は、他のディストリビューションで働かなくてよい。既定のオプションでは何もせず、対象外のディストリビューションでオプションを有効にしたら失敗させる。ベース イメージは `devcontainer.json` で決まり、誰がビルドしても同じ結果になるので、止めてよい。
+- 目的が一部のディストリビューションでしか意味を持たない Feature（Ubuntu にしかパッケージを配らない Launchpad の PPA を足すものなど）は、他のディストリビューションで働かなくてよい。既定のオプションでは何もせず、対象外のディストリビューションでオプションを有効にしたら失敗させる。ベース イメージは `devcontainer.json` で決まり、誰がビルドしても同じ結果になるので、止めてよい。
 - 具体的なリリース、イメージ名、アーキテクチャは `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` を正本とする。プラグイン内でリリース番号、イメージ名、アーキテクチャを書く箇所は、正本と一致させる。
   - 一致しているかは `bash .github/scripts/check-supported-platforms.sh` で検査する（CI の validate ワークフローでも実行される）。
     - リリース番号とイメージ名は、プラグイン内のどこに書いても検査される。
