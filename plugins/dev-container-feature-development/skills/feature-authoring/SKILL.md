@@ -20,7 +20,7 @@ test/<id>/
   test.sh                     # default options, run on every base image
   scenarios.json, <name>.sh   # option and environment scenarios
   <name>/                     # extra build files for a scenario (e.g. a Dockerfile)
-  duplicate.sh                # idempotency test (optional)
+  duplicate.sh                # second-run test, when options change the result
   negative-tests.md           # failure cases the CLI cannot express
 test/_global/                 # scenarios spanning several Features (optional)
 ```
@@ -39,6 +39,18 @@ Other distributions are supported only when doing so costs no more than a packag
 
 Every Feature supports every architecture in `references/supported-platforms.md` and lists them in `architectures` of its `test-<id>` job in the test workflow, which runs the tests on a native runner of each architecture (see the `feature-testing` skill). The list is required even when it names them all, so that adding an architecture to the plugin later does not silently extend Features whose upstream has no build for it. Leave an architecture out only when the upstream publishes no build for it; then `install.sh` fails on it with a message saying so, and `NOTES.md` explains the gap. Architectures missing from `references/supported-platforms.md` are not supported at all, because CI cannot test them.
 
+### Features for one distribution
+
+Some Features have no meaning on part of the supported platforms. One that rewrites Ubuntu's apt sources has nothing to rewrite on Debian. Such a Feature need not do its work there, as long as it follows these rules:
+
+- With default options, change nothing and succeed, so that the auto-generated test passes on every base image.
+- When an option asks for the work on a distribution the Feature is not for, fail with an error that names the distributions it is for. The base image is fixed by `devcontainer.json`, so every build gets the same result, and stopping it is right.
+- In `NOTES.md` Limitations, name the distributions the Feature is for and say why the others are out of scope.
+
+The same Feature can meet a supported architecture where there is nothing to act on: Ubuntu's arm64 images take their packages from another host than its amd64 images do. There, warn and change nothing instead of failing, because one `devcontainer.json` is built on both architectures and a failure would lock out the users of one. Keep the architecture in `architectures`, test the no-op, and describe it in Limitations.
+
+Do not stretch this to a tool whose upstream publishes no build for an architecture. That case fails, as described above: the user asked for the tool, and a build that succeeds without it only postpones the error to the moment the command is missing. The test is whether doing nothing leaves the container as the user expects.
+
 ## Dependency policy
 
 - Install missing dependencies with `apt-get`. Probe for each command first (`command -v`) and install only what is missing, so that images that already have the tools are untouched.
@@ -56,11 +68,11 @@ Follow these rules. Detailed patterns with code are in `references/install-scrip
 2. **Root check.** Fail early with a clear message when `id -u` is not 0.
 3. **Options.** Each option arrives as an upper-cased environment variable (`myOption` → `MYOPTION`, non-word characters become `_`). Read with a default that matches `devcontainer-feature.json`, e.g. `VERSION="${VERSION:-latest}"`. Validate every value before use, booleans and `enum` options included, because the CLI does not enforce `type` or `enum`; free-form strings must never reach a path or command unchecked.
 4. **Messages.** Prefix every message with the Feature ID (`<id>: ...`) and send errors to stderr. State what failed and what the user can do about it.
-5. **Architecture.** Detect with `uname -m`, not `dpkg --print-architecture`, so detection does not depend on Debian tooling. Accept exactly the architectures in the Feature's test job, and fail with a message for any other value.
+5. **Architecture.** Detect with `uname -m`, not `dpkg --print-architecture`, so detection does not depend on Debian tooling. Accept exactly the architectures in the Feature's test job, and fail with a message for any other value. An accepted architecture may be the no-op that "Features for one distribution" describes.
 6. **Downloads.** Use `curl -fsSL --retry 3`. Verify every downloaded artifact against a checksum file or signature that the upstream publishes separately from the artifact. Prefer signatures, and pin the signing key's fingerprint in the script. A checksum file from the same release protects against corrupted downloads but not against a compromised release; when that is all the upstream offers, use it and say so in `NOTES.md`. When a version is pinned, confirm the installed binary reports that version.
 7. **Temporary files.** Create them with `mktemp -d` and remove them in an `EXIT` trap.
 8. **Users.** The script runs as root. Use `_REMOTE_USER` / `_REMOTE_USER_HOME` for per-user setup, `chown` what is created in a user's home, and never assume the user is `root` or `vscode`.
-9. **Idempotency.** Running the script twice, or with different options, must not fail or corrupt the result. Check before appending to files, use `ln -sfn`, and prefer writing whole files over editing.
+9. **Second runs.** The script does run twice on one image: when the base image was prebuilt with the Feature, when another Feature pulls it in through `dependsOn` and the user lists it too with other options or another version, and in the duplicate test. A second run must not fail or damage what the first left. Settings and files the Feature creates follow the later run, so write whole files and use `ln -sfn`; additions to a list accumulate without duplicates; things the options cannot reproduce, such as generated keys, are kept. An edit in place that does not find its input warns and changes nothing. Never leave a requested option without effect silently. Details are in `references/install-script.md`.
 10. **Summary line.** End with one line stating what was installed or configured, including the resolved version.
 
 Comments explain *why*, not *what*. Write them in American English.
@@ -80,9 +92,9 @@ The full property list, lifecycle hooks, `containerEnv`, `mounts`, `entrypoint`,
 
 Use these sections, omitting any that would be empty:
 
-- `## How it works` — what the script installs or changes, where, and why that method was chosen.
+- `## How it works` — what the script installs or changes, where, and why that method was chosen; what a second run on the same image yields (the later options win, the results add up, or what exists is kept).
 - `## Requirements` — dependencies; what `apt-get` installs automatically; what images without `apt-get` must provide.
-- `## Limitations` — tested distributions (from `references/supported-platforms.md`) and the statement that other distributions are untested; tested architectures (those in the Feature's test job), and why any architecture of `references/supported-platforms.md` is missing; known gaps.
+- `## Limitations` — tested distributions (from `references/supported-platforms.md`) and the statement that other distributions are untested; tested architectures (those in the Feature's test job), and why any architecture of `references/supported-platforms.md` is missing; for a Feature for one distribution, which distributions it is for and why; when the script warns and changes nothing; known gaps.
 
 `examples/NOTES.md` shows the expected shape.
 

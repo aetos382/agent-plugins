@@ -9,7 +9,8 @@
     "version": {
       "type": "string",
       "proposals": [
-        "latest"
+        "latest",
+        "1.2.3"
       ],
       "default": "latest",
       "description": "Version of mytool to install, such as '1.2.3', or 'latest'."

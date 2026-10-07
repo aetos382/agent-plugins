@@ -54,7 +54,12 @@ Because all of `test/<id>/` is copied, assertion scripts can read fixture files 
 
 ## Duplicate tests
 
-When `test/<id>/duplicate.sh` exists and `--skip-duplicated` is not given, the CLI builds an image with the Feature installed twice: once with defaults and once with values it picks for each option (randomized only with `--permit-randomization`). The script receives the non-default values as `<OPTION>` and the defaults as `<OPTION>__DEFAULT`, both upper-cased. Duplicate tests run on the auto-generated base image.
+When `test/<id>/duplicate.sh` exists and `--skip-duplicated` is not given, the CLI builds an image with the Feature listed twice: once with values it picks for each option, and once with the defaults. The script receives the picked values as `<OPTION>` and the defaults as `<OPTION>__DEFAULT`, both upper-cased. Duplicate tests run on the auto-generated base image.
+
+- **Order.** `install.sh` runs with the picked values first and with the defaults last. A check for a Feature whose later run wins therefore expects the result of the defaults.
+- **Picked values.** A boolean gets the opposite of its default. A string with `enum` or `proposals` gets the first listed value that is not the default (a random one with `--permit-randomization`). A string with neither keeps its default, and `<OPTION>` is not set.
+- **No second run.** When no option has another value to pick, both entries are the same and the CLI runs `install.sh` once. The test then passes without testing anything. Give at least one behavior-changing option a second value in `enum` or `proposals`, and make `duplicate.sh` check that `<OPTION>` differs from `<OPTION>__DEFAULT`.
+- **Every base image.** The duplicate test runs wherever the auto-generated test runs, with a non-default option. A Feature that refuses its option on some of the base images (see "Features for one distribution" in the `feature-authoring` skill) therefore cannot have one.
 
 ## Debugging a failed build
 

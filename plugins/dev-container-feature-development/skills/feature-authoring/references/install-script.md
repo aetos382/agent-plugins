@@ -95,6 +95,38 @@ Map to whatever naming the upstream release uses. The branches that set `ARCH` m
 
 List the tested architectures in `NOTES.md`.
 
+## Features for one distribution
+
+A Feature that only has meaning on one distribution (see "Features for one distribution" in the skill) does nothing by default and checks the distribution only once an option asks for the work:
+
+```sh
+if [ -z "${MIRROR}" ]; then
+  echo "${FEATURE_ID}: 'mirror' is empty; leaving apt sources unchanged."
+  exit 0
+fi
+
+# os-release(5) allows quoted values, so ID="ubuntu" is as valid as ID=ubuntu. Sourcing the file in
+# a subshell parses it the way the format prescribes and keeps its variables out of this script.
+# shellcheck source=/dev/null
+if [ ! -r '/etc/os-release' ] || ! (. '/etc/os-release' && [ "${ID:-}" = 'ubuntu' ]); then
+  echo "${FEATURE_ID}: this Feature only supports Ubuntu-based images (ID=ubuntu in /etc/os-release)." >&2
+  exit 1
+fi
+```
+
+Validate every option before the first of these exits, the `exit 0` for the empty default included (see "Validating options"). An invalid value is an error on every distribution, also when the Feature goes on to do nothing.
+
+On a supported architecture where there is nothing to act on, warn and change nothing rather than fail:
+
+```sh
+if [ "${CHANGED}" -eq 0 ]; then
+  echo "${FEATURE_ID}: no default Ubuntu apt sources found; leaving apt sources unchanged." >&2
+  exit 0
+fi
+```
+
+This is the same path as an edit in place that does not find its input (see "Idempotency"). It is not for a missing upstream build, which fails as shown under "Architecture".
+
 ## Resolving "latest"
 
 First record whether the user named a version, before `latest` is resolved: only a version the user named is a promise the installed binary can be held to (see "Checking the installed version"). Both lookups below assume this block.
@@ -297,9 +329,37 @@ A script referenced by `entrypoint` or a lifecycle hook in `devcontainer-feature
 
 ## Idempotency
 
-- Append to shell profiles only when the line is not already there: `grep -qxF "$LINE" "$FILE" || printf '%s\n' "$LINE" >> "$FILE"`. Prefer a dedicated file under `/etc/profile.d/` written in full.
-- Use `ln -sfn` for symlinks and `install` or `cp` over existing files rather than failing when they exist.
-- When a second run has different options, the result must match what a single run with those options would produce.
+A Feature is installed twice on one image more often than it seems:
+
+- The base image was prebuilt with the Feature, and the user lists it again. The CLI runs it again even when the options are the same, and the user's entry runs last.
+- Another Feature pulls it in through `dependsOn`, and the user lists it too with other options or another version. Both run. Neither the Feature nor the user controls which runs last: the user's entry can run first. With the same version and options, the CLI runs it once.
+- The duplicate test.
+
+A second run must not fail, and must not damage what the first left. Beyond that, what it yields depends on what the script touches, and one script can mix the cases:
+
+| The script | A second run | How |
+|---|---|---|
+| Creates settings or files | The later run wins. | Write whole files, `install` or `cp` over existing ones, `ln -sfn`. Prefer a dedicated file under `/etc/profile.d/` written in full over a line appended to a profile. |
+| Adds to a list (packages, versions side by side) | Both results are present. The same options twice add nothing twice. | Check before appending: `grep -qxF "$LINE" "$FILE" \|\| printf '%s\n' "$LINE" >> "$FILE"`. |
+| Creates what the options cannot reproduce (generated keys or IDs, initialized data) | What exists is kept. | Test for it first and skip. |
+| Edits configuration in place | Warns and changes nothing when the input it expects is not there. | See below. |
+
+State in `NOTES.md` which of these applies. The one thing never to do is to leave a requested option without effect and say nothing. Keeping a generated key is not that: the key does not come from an option.
+
+Between two versions of the Feature, which also happens through `dependsOn`, only the first requirement holds: do not fail, and do not damage the earlier result.
+
+### Edits in place
+
+An edit in place looks for something to replace, and a second run may not find it, because the first run replaced it. A base image whose author already configured the same thing by other means looks exactly the same to the script. Treat both alike:
+
+- When the requested value is already in place, succeed without a warning. The option took effect.
+- Otherwise, when the expected input is missing, change nothing and print a warning that says what was not found and that nothing was changed. Do not fail: the image may be set up that way on purpose.
+- Never apply part of an edit. Decide what to change before changing anything.
+- Describe this in `NOTES.md` Limitations.
+
+Do not record earlier runs (a marker file, a backup of the original) in order to undo them. That adds a state that can disagree with the real configuration, for a case in which the user gets a warning either way.
+
+### Testing
 
 Write `test/<id>/duplicate.sh` to have CI install the Feature twice; see the `feature-testing` skill.
 

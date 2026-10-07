@@ -14,9 +14,9 @@ Tests live in `test/<id>/`, mirroring `src/<id>/`. They run with `devcontainer f
 | `test/<id>/test.sh` | Auto-generated | Builds `--base-image` (default `ubuntu:focal`) with the Feature at default options, runs `test.sh`. CI runs this for every supported base image. |
 | `test/<id>/scenarios.json` + `test/<id>/<name>.sh` | Scenario | Each top-level key is a scenario name whose value is a `devcontainer.json`. Builds it, runs `<name>.sh`. |
 | `test/<id>/<name>/` | Scenario files | Copied into the scenario's `.devcontainer/`, e.g. a `Dockerfile` referenced by `"build": { "dockerfile": "Dockerfile" }`. |
-| `test/<id>/duplicate.sh` | Duplicate | Installs the Feature twice, once with default options and once with other values; option values are exposed as `<OPTION>` and `<OPTION>__DEFAULT`. |
+| `test/<id>/duplicate.sh` | Duplicate | Installs the Feature twice, first with option values the CLI picks and then with the defaults; the values are exposed as `<OPTION>` and `<OPTION>__DEFAULT`. |
 | `test/_global/scenarios.json` | Global scenario | Scenarios spanning several Features. |
-| `test/<id>/negative-tests.md` | Manual | Failure cases the CLI cannot express, run by `docker run`. See below. |
+| `test/<id>/negative-tests.md` | Manual | Cases the CLI cannot express, run by `docker run`: failures, and the second run of a Feature for one distribution. See below. |
 
 `test.sh` is mandatory for every Feature: the auto-generated run fails without it. So is a job in the test workflow, which names the architectures to test on (see "Test jobs" below); the global scenarios need one too.
 
@@ -28,10 +28,11 @@ Make every test script executable, following the rule in the `new-feature` skill
 2. **Each option** (scenarios): one scenario per non-default value that changes behavior. Assert the effect of the option, not only that the build succeeded.
 3. **Non-root remote user** (scenario): use one of the non-root test images from `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md` (`mcr.microsoft.com/devcontainers/base` images) with `"remoteUser": "vscode"` whenever the Feature touches a user's home, a user-owned file, or `PATH`. The check runs as that user.
 4. **Bare image** (scenario, when the Feature installs dependencies): an official Debian or Ubuntu image with `"remoteUser": "root"`, where tools like `curl` are missing, to exercise dependency installation.
-5. **Idempotency** (`duplicate.sh`): when the Feature has options that change what is installed.
-6. **Failure paths** (`negative-tests.md`): invalid option values, verification failures, missing dependencies without `apt-get`.
+5. **Second runs** (`duplicate.sh`): when the Feature has options that change what is installed or configured. Assert what `NOTES.md` says a second run yields. The duplicate test installs with the non-default values first and with the defaults last, so where the later run wins, expect the result of `<OPTION>__DEFAULT`; where results add up, expect both. A Feature for one distribution cannot have a `duplicate.sh`: the duplicate test runs on every base image with a non-default option, and the Feature refuses that on the other distributions, which fails the build. Cover its second run with a case in `negative-tests.md` that runs `install.sh` twice in a container of a distribution it is for.
+6. **Failure paths** (`negative-tests.md`): invalid option values, verification failures, missing dependencies without `apt-get`, and, for a Feature for one distribution, the refusal on the others.
+7. **No-op paths** (scenario): when the Feature warns and changes nothing on a supported architecture, a scenario that turns the option on, on an image of a distribution the Feature is for. `test.sh` cannot cover this, because it runs with the default options, which do nothing anyway. The scenario runs on every architecture of the job, so its script branches on `uname -m`: where the Feature works, assert the effect; where it does not, assert that nothing changed.
 
-Scenarios pin their own `image`, so they run once per architecture rather than once per base image. Spread scenarios across the supported releases listed in `supported-platforms.md` instead of putting all of them on one image, and use only images listed there. Release numbers in the examples of this skill are illustrations; take the current ones from that file.
+Scenarios pin their own `image`, so they run once per architecture rather than once per base image. Spread scenarios across the supported releases listed in `supported-platforms.md` instead of putting all of them on one image. Use only images that the `baseImage` matrix of the repository's test workflow lists, written as they are there, both for `image` and for the `FROM` of a scenario's Dockerfile. A scenario on any other image suggests support for a release that CI does not otherwise test, and it fails unrelated pull requests once that image stops being updated or is removed. Release numbers in the examples of this skill are illustrations; take the current ones from `supported-platforms.md`. When the two lists differ, the `baseImage` matrix decides what a scenario may use.
 
 ## Test jobs
 
@@ -108,7 +109,7 @@ Complete examples are in `examples/`.
 
 ## Negative tests
 
-The CLI treats a failed build as a failed test, so a case that is supposed to fail cannot be a scenario. Document such cases in `test/<id>/negative-tests.md`. The `run-feature-tests` skill executes them, so follow this format exactly (see `examples/negative-tests.md`):
+The CLI treats a failed build as a failed test, so a case that is supposed to fail cannot be a scenario. Neither can the second run of a Feature for one distribution, whose duplicate test would fail on the other base images; its case runs `install.sh` twice and expects exit status 0 from the second run, with the warning or the result that `NOTES.md` describes. Document such cases in `test/<id>/negative-tests.md`. The `run-feature-tests` skill executes them, so follow this format exactly (see `examples/negative-tests.md`):
 
 - An introduction naming which `install.sh` logic the cases cover and when to rerun them.
 - A `## Setup` section with one interactive `docker run --rm -it ... <image> sh` command that mounts `src/<id>` read-only at `/mnt/f`. Every case starts from a fresh container created by this command, so a case may modify the container (for example disable `apt-get`) without affecting the next one.
