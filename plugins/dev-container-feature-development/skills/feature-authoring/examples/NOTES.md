@@ -3,6 +3,7 @@
 - Downloads `mytool_<version>_linux_<arch>.tar.gz` from the [mytool releases](https://github.com/example-org/mytool/releases), verifies it against the release's `checksums.txt`, and installs the binary to `/usr/local/bin/mytool` (owned by root, mode 755).
 - mytool publishes checksums but no signatures, and `checksums.txt` comes from the same release as the archive. The check therefore catches corrupted or truncated downloads, but not a release that was tampered with at the source.
 - When `version` names an exact version, the installed binary has to report that version or the install fails.
+- Installing the Feature again on the same image, for example on top of a prebuilt image or through another Feature's `dependsOn`, replaces the binary: the version of the later installation is the one left.
 - `version: latest` is resolved by following the redirect of the releases/latest page rather than the GitHub API, so builds are not subject to the API's rate limit.
 
 ## Requirements
