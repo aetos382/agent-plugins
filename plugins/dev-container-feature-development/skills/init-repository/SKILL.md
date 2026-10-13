@@ -17,8 +17,8 @@ Reply to the user in the language they use. This skill writes files in the worki
 
    | Role | How to recognize it |
    |---|---|
-   | CI | runs `devcontainer features test` or calls a reusable workflow that does, uses `devcontainers/action` with `validate-only: "true"`, or runs `shellcheck` |
-   | Reusable test | has the `workflow_call` trigger and runs `devcontainer features test` |
+   | CI | starts on `push` or `pull_request`, and runs `devcontainer features test` or calls a reusable workflow that does, uses `devcontainers/action` with `validate-only: "true"`, or runs `shellcheck` |
+   | Reusable test | starts only on `workflow_call`, and runs `devcontainer features test`; never the CI role, whatever its file name |
    | Release | uses `devcontainers/action` with `publish-features: "true"` |
 
    Several workflows can share the CI role: earlier versions of this plugin wrote a test workflow and a validate workflow, each with an aggregate job of its own (`tests-passed`, `validation-passed`). Record every one of them, and the aggregate jobs they have.
