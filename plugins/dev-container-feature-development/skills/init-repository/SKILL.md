@@ -13,15 +13,33 @@ Reply to the user in the language they use. This skill writes files in the worki
 
 1. Confirm the working directory is the root of a Git repository (`git rev-parse --show-toplevel`).
 2. Identify the repository: `gh repo view --json nameWithOwner,isInOrganization`. When `gh` is unavailable or the repository has no GitHub remote yet, ask the user for `<owner>/<repo>`.
-3. Record what exists. Identify workflows by what they do, not by file name:
+3. Record what exists. Identify workflows as this table says, not by file name:
 
    | Role | How to recognize it |
    |---|---|
-   | CI | starts on `push` or `pull_request`, and runs `devcontainer features test` or calls a reusable workflow that does, uses `devcontainers/action` with `validate-only: "true"`, or runs `shellcheck` |
-   | Reusable test | starts only on `workflow_call`, and runs `devcontainer features test`; never the CI role, whatever its file name |
+   | CI | has the line `# dev-container-feature-development: ci`; this plugin manages that workflow |
+   | Reusable test | starts only on `workflow_call`, and runs `devcontainer features test` |
    | Release | uses `devcontainers/action` with `publish-features: "true"` |
 
-   Several workflows can share the CI role: earlier versions of this plugin wrote a test workflow and a validate workflow, each with an aggregate job of its own (`tests-passed`, `validation-passed`). Record every one of them, and the aggregate jobs they have.
+   The CI workflow is recognized by that line alone: `grep -lxF '# dev-container-feature-development: ci' .github/workflows/*`. A workflow without it is not the CI workflow, even when it runs the same tests and checks; that includes the `test.yaml` and `validate.yaml` that earlier versions of this plugin wrote. Leave those workflows and their aggregate jobs as they are. Record the ones that start on `push` or `pull_request` and run `devcontainer features test` or call a reusable workflow that does, use `devcontainers/action` with `validate-only: "true"`, or run `shellcheck`: they duplicate the CI workflow.
+
+   - **One workflow has the line.** It is the CI workflow.
+   - **Several have it.** Stop and tell the user which ones. This plugin manages exactly one.
+   - **None has it, and `.github/workflows/` holds no workflow.** The CI workflow is to be created.
+   - **None has it, but workflows exist.** The line may have been lost from one of them. Do not ask the user; look in the Git history, first at the default file name and then at every workflow:
+
+     ```bash
+     mark='# dev-container-feature-development: ci'
+     git rev-parse --is-shallow-repository
+     git grep -l -F -e "${mark}" HEAD -- .github/workflows
+     git log --format='%h %ad %s' --date=short --name-status -S"${mark}" -- .github/workflows/ci.yaml .github/workflows/ci.yml
+     git log --format='%h %ad %s' --date=short --name-status -S"${mark}" -- .github/workflows
+     ```
+
+     `git grep` finds a line that was removed without being committed. `git log -S` lists the commits that added or removed the line, also in files that were deleted since; follow a renamed file with `git log --follow`.
+     - **A workflow that still exists had the line.** It is the CI workflow, and its line was lost. Plan to put the line back at the top of that file, with the comment above it as the template writes them, and name in the plan the commit that removed it. When several qualify, take `ci.yaml` or `ci.yml` if it is one of them, otherwise the one that lost the line last, and say so in the plan.
+     - **No file ever had the line, or only files that no longer exist did.** The CI workflow is to be created. Say in the plan that no workflow was recognized as the CI workflow, so that the user confirms the creation by approving the plan.
+     - **The repository is a shallow clone** (`true` from the first command) and the history shows nothing: the result is not conclusive. Say so in the plan; creating the CI workflow remains the default.
 
    Also check `src/*/devcontainer-feature.json`, `test/*/`, `.devcontainer/devcontainer.json`, `README.md`, `LICENSE`, and `.gitattributes`.
 4. Record how dependencies are updated: `.github/dependabot.yml`, and a Renovate configuration in any of the locations Renovate reads (`renovate.json`, `renovate.json5`, `.github/renovate.json`, `.github/renovate.json5`, `.gitlab/renovate.json`, `.gitlab/renovate.json5`, `.renovaterc`, `.renovaterc.json`, `.renovaterc.json5`, or a `renovate` key in `package.json`).
@@ -99,9 +117,17 @@ For each destination, decide:
   - Dependency updates: GitHub Actions and the dev container's Features are both covered. With an existing Renovate configuration, check what it covers instead of rewriting it, and propose only the missing pieces.
 - **Keep** when the existing file already satisfies the template.
 
-The template's aggregate job, `ci-passed`, turns the jobs this plugin manages (`validate`, `shellcheck`, and the test jobs) into one check. Its name is the template's default and nothing in this plugin depends on it. In an existing repository, leave the aggregate jobs as they are: do not rename one, do not merge workflows that share the CI role, and do not merge their aggregate jobs. A repository may have several, and its branch rules may refer to them by name. When several workflows share the CI role, update each job in the workflow that already has it, and put a job that is missing into the workflow that runs the Feature tests. Add an aggregate job only to a workflow that has none and holds jobs this plugin manages.
+The CI workflow is the one found in the survey. This skill never turns another workflow into the CI workflow, and never moves jobs out of one: when the survey found none, it creates `.github/workflows/ci.yaml` from the template, next to whatever workflows exist. Before planning that, make sure nothing collides, and say in the plan what was renamed and why:
 
-The CI workflow template has no Feature jobs. Keep the existing `test-<id>` jobs and `test-global` of the CI workflow as they are, including their `architectures` and their entries in `needs`. This skill does not change the architectures an existing Feature is tested on, because that change also belongs in the Feature's `install.sh` and `NOTES.md`; the "Test jobs" section of the `feature-testing` skill covers it. For each Feature without a job, plan a `test-<id>` job in the form that the template's comment and that section show, plus `test-global` when `test/_global/scenarios.json` exists and the job does not, and list every job under `needs` of the aggregate job of its workflow. With no Feature yet, the template's aggregate job needs only `validate` and `shellcheck`; the `new-feature` skill adds the job of each Feature.
+- When a workflow without the line already has that file name, choose another, for example `features-ci.yaml`.
+- When a job of another workflow has the ID `ci-passed`, choose another ID for the aggregate job, for example `features-passed`. Checks with the same name from two workflows make a required status check ambiguous and can block merging.
+- When another workflow has the `name` `CI`, choose another name as well.
+
+In the plan, name the workflows recorded in the survey that duplicate the new CI workflow, and say that both will run until the user removes the old ones. This skill does not remove or change them.
+
+The CI workflow holds the jobs this plugin manages (`validate`, `shellcheck`, and the test jobs) and one aggregate job that turns them into one check. The aggregate job has the comment line `# dev-container-feature-development: aggregate job` directly above its ID; the other skills and the `feature-reviewer` agent find it by that line, not by its name. `ci-passed` is only the template's default, and an existing aggregate job keeps its ID, since branch rules may refer to it. When the aggregate job of the CI workflow lacks that line, put it back, with the comment above it that tells readers to leave it alone, both as the template writes them; that changes neither the job nor the name of its check. Never edit, move, or remove either marker line where it is already present. Aggregate jobs of other workflows are the repository's own: do not rename, merge, or mark them.
+
+The CI workflow template has no Feature jobs. Keep the existing `test-<id>` jobs and `test-global` of the CI workflow as they are, including their `architectures` and their entries in `needs`. This skill does not change the architectures an existing Feature is tested on, because that change also belongs in the Feature's `install.sh` and `NOTES.md`; the "Test jobs" section of the `feature-testing` skill covers it. For each Feature without a job, plan a `test-<id>` job in the form that the template's comment and that section show, plus `test-global` when `test/_global/scenarios.json` exists and the job does not, and list every job under `needs` of the aggregate job. With no Feature yet, the template's aggregate job needs only `validate` and `shellcheck`; the `new-feature` skill adds the job of each Feature.
 
 When an existing job leaves out an architecture of `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`, list the job and the architecture in the plan as information, without changing the job, so that the user can decide separately whether to extend the Feature.
 
@@ -128,7 +154,7 @@ Write the approved files. Then check them:
 - `jq empty` on every JSON file written.
 - `actionlint` on the workflows, when it is installed.
 - For existing Features, confirm that each `test/<id>/test.sh` exists, since each now has a `test-<id>` job, whose auto-generated test fails without it. List any that are missing and offer the `feature-testing` skill.
-- Confirm the jobs of the CI workflow, since CI cannot detect a missing job or a missing `needs` entry: every Feature under `src/` has exactly one job, `test-<id>`, calling `test-feature.yaml` with `feature: <id>`, so that the job name and `feature` agree; `test-global` exists when `test/_global/scenarios.json` does; no job names a Feature that is not under `src/`; and each of these jobs, like `validate` and `shellcheck`, is listed under `needs` of the aggregate job of its workflow. `test-feature.yaml` itself checks the Feature ID and the architectures when it runs.
+- Confirm that exactly one workflow has the line `# dev-container-feature-development: ci`, and the jobs of that workflow, since CI cannot detect a missing job or a missing `needs` entry: every Feature under `src/` has exactly one job, `test-<id>`, calling `test-feature.yaml` with `feature: <id>`, so that the job name and `feature` agree; `test-global` exists when `test/_global/scenarios.json` does; no job names a Feature that is not under `src/`; and each of these jobs, like `validate` and `shellcheck`, is listed under `needs` of the aggregate job, the only job with the line `# dev-container-feature-development: aggregate job` directly above its ID. `test-feature.yaml` itself checks the Feature ID and the architectures when it runs.
 - When an existing Feature has the ID `global`, which is reserved because its job would collide with `test-global`, point it out and suggest renaming the Feature.
 
 ## 6. Hand over the manual steps

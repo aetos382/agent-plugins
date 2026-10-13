@@ -12,7 +12,7 @@ Reply to the user in the language they use. Do not commit; offer to at the end.
 
 ## 1. Check the repository
 
-- The repository should be a Features collection: `src/` and a CI workflow that runs `devcontainer features test`, or calls a reusable workflow that does. When either is missing, suggest running the `init-repository` skill first, and continue only if the user wants to.
+- The repository should be a Features collection: `src/` and the CI workflow of this plugin, which is the workflow under `.github/workflows/` with the line `# dev-container-feature-development: ci`. When either is missing, suggest running the `init-repository` skill first, and continue only if the user wants to. Without the CI workflow, continuing means creating the Feature's files only: this plugin edits no workflow but the CI workflow it manages.
 - When the argument names an ID, check that `src/<id>/` does not exist yet and that the ID is not `global`, which is reserved (see "ID and name" in the interview below).
 
 ## 2. Research, then interview
@@ -56,7 +56,7 @@ Make `install.sh` and every test script executable, so that they can be run dire
 
 Also update:
 
-- The CI workflow (usually `.github/workflows/ci.yaml`): add a `test-<id>` job with the architectures agreed above, and add it to `needs` of the workflow's aggregate job, whatever its name, as the "Test jobs" section of the `feature-testing` skill describes. Without the job, CI does not test the Feature, and nothing in CI reports it. When the workflow does not call `test-feature.yaml`, do what that workflow expects of a new Feature instead: add the Feature wherever the workflow lists its Features, and list any job added under `needs` of the aggregate job it has. Do not add or rename an aggregate job here, because branch rules may refer to it by name.
+- The CI workflow (usually `.github/workflows/ci.yaml`): add a `test-<id>` job with the architectures agreed above, and add it to `needs` of the workflow's aggregate job, whatever its name, as the "Test jobs" section of the `feature-testing` skill describes. Without the job, CI does not test the Feature, and nothing in CI reports it. Do not add an aggregate job here. When the repository has no CI workflow of this plugin and the user chose to continue, do not edit any workflow, even one that tests the other Features: tell the user that CI does not test the new Feature until `init-repository` has created the CI workflow.
 - The Features table in the root `README.md`, when there is one.
 
 Run `shellcheck` on every new script when it is available and fix what it reports.

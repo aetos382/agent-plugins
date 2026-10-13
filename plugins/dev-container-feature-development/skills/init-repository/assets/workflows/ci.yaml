@@ -1,3 +1,6 @@
+# Do not edit, move, or remove the next line. The dev-container-feature-development plugin
+# recognizes the workflow it manages by that line, whatever the name of this file.
+# dev-container-feature-development: ci
 name: "CI"
 # No paths or branches filter on pull_request by default: when branch rules require ci-passed, a run
 # that is skipped never reports it, and the pull request stays blocked.
@@ -63,8 +66,12 @@ jobs:
 
   # Aggregates the jobs above into a single check, so that branch rules can require this one check and
   # need no change whenever a job is added or renamed. Every job above must be listed under needs: one
-  # that is missing can fail while this check still passes. The job ID is free to choose; when branch
-  # rules already require this check, change it there as well.
+  # that is missing can fail while this check still passes. Branch rules that require this check
+  # refer to it by the job ID.
+  #
+  # Do not edit, move, or remove the next line. The dev-container-feature-development plugin finds
+  # this job by that line, which stays directly above the job ID even when the ID changes.
+  # dev-container-feature-development: aggregate job
   ci-passed:
     runs-on: ubuntu-latest
     if: always()
