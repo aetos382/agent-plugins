@@ -5,3 +5,8 @@
 [hook "block-commit-to-main"]
   event = pre-commit
   command = bash .githooks/block-commit-to-main.sh
+
+# renovate.json の誤りは Renovate が PR を作らなくなるまで気付きにくいので、コミットする前に検証する。
+[hook "validate-renovate-config"]
+  event = pre-commit
+  command = bash .githooks/validate-renovate-config.sh
