@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: "Validate"
 on:
   push:
@@ -13,7 +15,7 @@ jobs:
   plugin-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
       # The latest release is installed on purpose: the plugins target the latest Claude Code only.
       # Validation runs locally and needs no credentials.
@@ -40,7 +42,7 @@ jobs:
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
       # ShellCheck is preinstalled on the GitHub-hosted Ubuntu runners. The file list is printed
       # because ShellCheck says nothing on success.
@@ -62,7 +64,7 @@ jobs:
   platforms:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
       - name: "Check supported platforms for consistency"
         run: bash .github/scripts/check-supported-platforms.sh
@@ -77,7 +79,7 @@ jobs:
     env:
       ACTIONLINT_IMAGE: kjanat/actionlint:1.17.0@sha256:d484cccadf56b6a356466ade9af4c8e05c5dce1badaf0a9ecd0d7639d68d9c92
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
       - name: "Lint the workflows of this repository"
         run: docker run --rm -v "${PWD}:/repo" -w /repo "${ACTIONLINT_IMAGE}" -color
@@ -107,9 +109,43 @@ jobs:
           ' "${root}/.github/workflows/test.yaml"
           docker run --rm -v "${root}:/repo" -w /repo "${ACTIONLINT_IMAGE}" -color
 
+  # A mismatch between the workflows and actions.lock, or a lockfile that cannot be read, may only
+  # drop the pinning on the runner instead of failing the run, so it is stopped here.
+  actions-lock:
+    runs-on: ubuntu-latest
+    # The token is handed to an extension fetched by tag, so it is kept read-only.
+    permissions:
+      contents: read
+    env:
+      # Used to fetch the extension and for the GitHub API calls that --verify makes.
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: "Verify actions.lock"
+        run: |
+          set -euo pipefail
+          # Verify with the same version as the dev container and Renovate.
+          source .devcontainer/versions.sh
+          gh extension install github/gh-actions-lock --pin "${GH_ACTIONS_LOCK_VERSION}"
+          # The exit code alone is not enough: when the GitHub API cannot be reached, the commits
+          # are left unverified, which is reported only as a warning finding with exit code 0.
+          # Info findings (such as the record of a deleted workflow) are allowed.
+          status=0
+          result="$(gh actions-lock --no-fix --no-interactive --verify --json=valid,findings)" || status=$?
+          printf '%s\n' "${result}"
+          if [ "${status}" -ne 0 ]; then
+            exit "${status}"
+          fi
+          if ! jq -e '.valid == true and all(.findings[]; .severity == "info")' <<<"${result}" >/dev/null; then
+            echo '::error::gh actions-lock reported findings, or could not verify the pinned commits.' >&2
+            exit 1
+          fi
+
   # Aggregates the jobs above into a single check with a stable name, so that a branch ruleset can
   # require it without being updated whenever a job is added or renamed here.
-  validation-passed:
+  # Do not rename this job: the ruleset refers to it by this ID.
+  ci-passed:
     runs-on: ubuntu-latest
     if: always()
     needs:
@@ -117,10 +153,12 @@ jobs:
       - shellcheck
       - platforms
       - actionlint
+      - actions-lock
     steps:
       - name: "Check the results of the validation jobs"
         run: |
           test '${{ needs.plugin-validate.result }}' = success \
             && test '${{ needs.shellcheck.result }}' = success \
             && test '${{ needs.platforms.result }}' = success \
-            && test '${{ needs.actionlint.result }}' = success
+            && test '${{ needs.actionlint.result }}' = success \
+            && test '${{ needs.actions-lock.result }}' = success
