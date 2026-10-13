@@ -56,6 +56,6 @@ Claude Code のプラグインを配布するマーケットプレイス。
 
 ## `devcontainer-lock.json` の更新
 
-- `.devcontainer/devcontainer-lock.json` の最終更新日から一週間以上が経過していたら、`devcontainer upgrade` コマンドで更新する。
-- 更新後はファイルの最終更新日が更新されていることを確認する。
+- features の更新は、Dependabot（`.github/dependabot.yml`）が `.devcontainer/devcontainer-lock.json` の更新として提案する。それ以外の依存関係の更新は Renovate（`renovate.json`）で行う。詳しくは `.claude/rules/renovate.md` にある。
+- `devcontainer.json` の features を足したり変えたりしたときは、`devcontainer upgrade` コマンドでロックファイルを作り直す。
 - 末尾の改行だけの差分が出たら、その差分は採用せず、最新の CLI（`PATH` 上の `devcontainer`）で `devcontainer upgrade` をやり直した結果を正とする。Codespaces に同梱の古い CLI が、ビルド時に改行なしで書き出すことがあるため。
