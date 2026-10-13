@@ -50,7 +50,7 @@ jobs:
           if git diff --cached --quiet; then
             echo 'No documentation updates.'
           else
-            # Do not add "[skip ci]": a branch ruleset that requires the test workflows would never be
+            # Do not add "[skip ci]": branch rules that require a status check would never be
             # satisfied. Events caused by GITHUB_TOKEN do not start workflow runs either, so a user has
             # to close and reopen the pull request below before its checks are reported.
             git commit -m "${message}"

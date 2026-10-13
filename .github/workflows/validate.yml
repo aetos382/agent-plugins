@@ -86,7 +86,7 @@ jobs:
 
       # The templates are linted as a Git repository of their own, laid out as init-repository writes
       # them, so that calls to their reusable workflows resolve. Placeholders become a dummy ref, and
-      # a Feature job is added to test.yaml, which has none, so that its call is checked against
+      # a Feature job is added to ci.yaml, which has none, so that its call is checked against
       # test-feature.yaml. yq is preinstalled on the GitHub-hosted Ubuntu runners.
       - name: "Lint the workflow templates of dev-container-feature-development"
         run: |
@@ -105,8 +105,8 @@ jobs:
           done
           yq -i '
             .jobs = {"test-example": {"uses": "./.github/workflows/test-feature.yaml", "with": {"feature": "example", "architectures": "[\"amd64\"]"}}} + .jobs
-            | .jobs.tests-passed.needs = ["test-example"]
-          ' "${root}/.github/workflows/test.yaml"
+            | .jobs.ci-passed.needs += ["test-example"]
+          ' "${root}/.github/workflows/ci.yaml"
           docker run --rm -v "${root}:/repo" -w /repo "${ACTIONLINT_IMAGE}" -color
 
   # A mismatch between the workflows and actions.lock, or a lockfile that cannot be read, does not

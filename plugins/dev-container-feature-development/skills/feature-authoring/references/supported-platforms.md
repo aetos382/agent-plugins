@@ -10,7 +10,7 @@ This file is the single source of truth for the distributions, images, and archi
 - Other distributions are supported only when doing so costs no more than a package-manager branch, and are not tested.
 - **Architectures**: every architecture in the "Architectures" table, each tested in CI on a native runner of that architecture. A Feature may leave one out only when the upstream publishes no build for it. Architectures missing from the table are not supported, because CI cannot test them.
 - **CI runners**: GitHub-hosted runners of the newest Ubuntu LTS release that GitHub offers for every architecture in the table, named by release rather than `ubuntu-latest`. Like the base images, they are pinned so that a change of the default runner image cannot fail unrelated pull requests; moving to a newer release is a deliberate change. Arm64 runners have no `latest` label in any case.
-- A platform counts as tested only when the CI test workflow runs it. A local run on the developer's machine does not count, because it covers only that machine's architecture and is not repeated on every pull request.
+- A platform counts as tested only when the CI workflow runs it. A local run on the developer's machine does not count, because it covers only that machine's architecture and is not repeated on every pull request.
 
 ## Current releases
 
@@ -43,7 +43,7 @@ mcr.microsoft.com/devcontainers/base:3-ubuntu26.04
 
 ## Architectures
 
-Each Feature lists the architectures it supports in `architectures` of its job in the test workflow, and the global scenarios in that of `test-global`, using the names in the first column. The reusable test workflow runs each of them on the runner in the last column.
+Each Feature lists the architectures it supports in `architectures` of its job in the CI workflow, and the global scenarios in that of `test-global`, using the names in the first column. The reusable test workflow runs each of them on the runner in the last column.
 
 | Architecture | `uname -m` | CI runner |
 |---|---|---|
