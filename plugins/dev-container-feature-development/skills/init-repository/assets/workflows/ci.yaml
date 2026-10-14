@@ -2,8 +2,9 @@
 # recognizes the workflow it manages by that line, whatever the name of this file.
 # dev-container-feature-development: ci
 name: "CI"
-# No paths or branches filter on pull_request by default: when branch rules require ci-passed, a run
-# that is skipped never reports it, and the pull request stays blocked.
+# No paths or branches filter on pull_request by default: when branch rules require the aggregate
+# job, marked as such further below, a run that is skipped never reports it, and the pull request
+# stays blocked.
 on:
   push:
     branches:
@@ -86,6 +87,9 @@ jobs:
           NEEDS: ${{ toJSON(needs) }}
         run: |
           set -euo pipefail
+          # The results are printed because nothing else is on success, so that a job missing from
+          # needs can be noticed in the log.
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "${NEEDS}"
           failed="$(jq -r 'to_entries[] | select(.value.result != "success") | "::error::\(.key) ended with \(.value.result)."' <<< "${NEEDS}")"
           if [ -n "${failed}" ]; then
             printf '%s\n' "${failed}"
