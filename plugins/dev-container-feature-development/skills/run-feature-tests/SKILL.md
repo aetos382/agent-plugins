@@ -35,7 +35,7 @@ Tests execute code from the repository: `install.sh` and scenario configurations
 
 Run locally when both `command -v devcontainer` and `docker info` succeed. Otherwise use CI (section 5) and tell the user why local execution was not possible (no Docker daemon, or no Dev Container CLI; the CLI installs with `npm install -g @devcontainers/cli`).
 
-A local run covers only the architecture of the Docker host: `docker info --format '{{.Architecture}}'` reports it as `uname -m` does, and the "Architectures" table of `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md` maps that to an architecture name. Compare it with the `architectures` of each target's job in the test workflow (`test-<id>`, or `test-global` for `test/_global`), described in the `feature-testing` skill:
+A local run covers only the architecture of the Docker host: `docker info --format '{{.Architecture}}'` reports it as `uname -m` does, and the "Architectures" table of `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md` maps that to an architecture name. Compare it with the `architectures` of each target's job in the CI workflow (`test-<id>`, or `test-global` for `test/_global`), described in the `feature-testing` skill:
 
 - A target that does not list the host architecture cannot be tested locally. Use CI for it.
 - The listed architectures other than the host's are covered only by CI. After the local run, offer to check them with section 5, and until then report them as not run. Never report a Feature as tested on an architecture that only the local run covered, or on one that nothing ran.
@@ -45,7 +45,7 @@ A local run covers only the architecture of the Docker host: `docker info --form
 
 ### Base images
 
-Read the `baseImage` list from the matrix of the workflow that runs `devcontainer features test` (usually `.github/workflows/test-feature.yaml`, which `.github/workflows/test.yaml` calls), so that local runs match CI. When no workflow exists, use the "CI base images" list in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`.
+Read the `baseImage` list from the matrix of the reusable workflow called by the test jobs of the CI workflow (usually `.github/workflows/test-feature.yaml`), so that local runs match CI. The CI workflow is the workflow under `.github/workflows/` with the line `# dev-container-feature-development: ci`; do not read other workflows, even ones that run `devcontainer features test`. When the repository has no CI workflow, use the "CI base images" list in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`.
 
 When the workflow's list differs from that file, run with the workflow's list, and mention the difference in the report: the repository may not have been updated for a new release yet.
 
@@ -109,7 +109,7 @@ Present proposed fixes; apply them only when the user asks.
 
 ## 5. Use CI instead
 
-1. Find the workflow that runs `devcontainer features test` under `.github/workflows/`. When it is a reusable workflow (`on: workflow_call`, as `test-feature.yaml` from `init-repository` is), use the workflow that calls it (usually `test.yaml`) instead: runs are recorded under the caller. Note its triggers.
+1. Use the CI workflow, the workflow under `.github/workflows/` with the line `# dev-container-feature-development: ci` (usually `ci.yaml`), not the reusable workflow it calls: runs are recorded under the caller. Note its triggers. When the repository has no CI workflow, CI cannot be used: tell the user, report the targets as not run on CI, and suggest the `init-repository` skill. Do not use other workflows, even ones that run `devcontainer features test`.
 2. The CI result must correspond to the local `HEAD`. When the current branch has no upstream or the local branch is ahead of it, ask the user whether to push; do not push without approval.
 3. Make sure a run exists for `HEAD`. Workflows created by the `init-repository` skill run on pull requests and on `workflow_dispatch`, not on pushes to topic branches:
    - When `gh pr view --json number` finds a pull request for the branch, the push triggers a run.

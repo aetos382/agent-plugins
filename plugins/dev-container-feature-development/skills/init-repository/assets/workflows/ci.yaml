@@ -1,0 +1,97 @@
+# Do not edit, move, or remove the next line. The dev-container-feature-development plugin
+# recognizes the workflow it manages by that line, whatever the name of this file.
+# dev-container-feature-development: ci
+name: "CI"
+# No paths or branches filter on pull_request by default: when branch rules require the aggregate
+# job, marked as such further below, a run that is skipped never reports it, and the pull request
+# stays blocked.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # One job per Feature under src/, named test-<id>, that calls test-feature.yaml with the Feature's ID
+  # and the architectures to test it on, for example:
+  #
+  #   test-mytool:
+  #     uses: ./.github/workflows/test-feature.yaml
+  #     with:
+  #       feature: mytool
+  #       architectures: '["amd64", "arm64"]'
+  #
+  # When test/_global/scenarios.json exists, a job named test-global does the same with the feature
+  # _global and the architectures that every Feature used by the global scenarios supports.
+
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@__CHECKOUT_REF__
+
+      - name: "Validate devcontainer-feature.json files"
+        if: hashFiles('src/*/devcontainer-feature.json') != ''
+        uses: devcontainers/action@__DEVCONTAINERS_ACTION_REF__
+        with:
+          validate-only: "true"
+          base-path-to-features: "./src"
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@__CHECKOUT_REF__
+
+      # ShellCheck is preinstalled on the GitHub-hosted Ubuntu runners. Scripts are collected from git
+      # so that adding one needs no change here; a script without the .sh extension is out of scope.
+      # The file list is printed because ShellCheck says nothing on success.
+      - name: "Run ShellCheck"
+        run: |
+          set -euo pipefail
+          mapfile -d '' -t files < <(git ls-files -z '*.sh')
+          if [ "${#files[@]}" -eq 0 ]; then
+            # An empty selection is expected only before the first Feature is added. Once src/ has a
+            # Feature, it means the pathspec is broken.
+            if compgen -G 'src/*/devcontainer-feature.json' >/dev/null; then
+              echo '::error::No shell script matched the pathspec. The file selection is broken.' >&2
+              exit 1
+            fi
+            echo 'No shell scripts yet.'
+            exit 0
+          fi
+          printf 'Checking %s\n' "${files[@]}"
+          shellcheck -- "${files[@]}"
+
+  # Aggregates the jobs above into a single check, so that branch rules can require this one check and
+  # need no change whenever a job is added or renamed. Every job above must be listed under needs: one
+  # that is missing can fail while this check still passes. Branch rules that require this check
+  # refer to it by the job ID.
+  #
+  # Do not edit, move, or remove the next line. The dev-container-feature-development plugin finds
+  # this job by that line, which stays directly above the job ID even when the ID changes.
+  # dev-container-feature-development: aggregate job
+  ci-passed:
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - validate
+      - shellcheck
+    steps:
+      # if: always() runs this job whatever the others ended with, so it must itself reject every
+      # result other than "success": failure, cancelled, and skipped alike.
+      - name: "Check the results of all jobs"
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          # The results are printed because nothing else is on success, so that a job missing from
+          # needs can be noticed in the log.
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "${NEEDS}"
+          failed="$(jq -r 'to_entries[] | select(.value.result != "success") | "::error::\(.key) ended with \(.value.result)."' <<< "${NEEDS}")"
+          if [ -n "${failed}" ]; then
+            printf '%s\n' "${failed}"
+            exit 1
+          fi

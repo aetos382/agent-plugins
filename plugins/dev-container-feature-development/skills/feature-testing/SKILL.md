@@ -1,6 +1,6 @@
 ---
 name: feature-testing
-description: This skill should be used when the user asks to "write a test for a feature", "add a scenario", "edit scenarios.json", "write test.sh", "add a negative test", "write duplicate.sh", "add an idempotency test", "change the architectures a feature is tested on", or otherwise works on files under `test/<feature>/` or a Feature's job in the test workflow in a Dev Container Features repository. Explains how `devcontainer features test` discovers and runs tests and how to cover failure paths it cannot express.
+description: This skill should be used when the user asks to "write a test for a feature", "add a scenario", "edit scenarios.json", "write test.sh", "add a negative test", "write duplicate.sh", "add an idempotency test", "change the architectures a feature is tested on", or otherwise works on files under `test/<feature>/` or a Feature's job in the CI workflow in a Dev Container Features repository. Explains how `devcontainer features test` discovers and runs tests and how to cover failure paths it cannot express.
 ---
 
 # Testing Dev Container Features
@@ -18,7 +18,7 @@ Tests live in `test/<id>/`, mirroring `src/<id>/`. They run with `devcontainer f
 | `test/_global/scenarios.json` | Global scenario | Scenarios spanning several Features. |
 | `test/<id>/negative-tests.md` | Manual | Cases the CLI cannot express, run by `docker run`: failures, and second runs that the duplicate test cannot exercise. See below. |
 
-`test.sh` is mandatory for every Feature: the auto-generated run fails without it. So is a job in the test workflow, which names the architectures to test on (see "Test jobs" below); the global scenarios need one too.
+`test.sh` is mandatory for every Feature: the auto-generated run fails without it. So is a job in the CI workflow, which names the architectures to test on (see "Test jobs" below); the global scenarios need one too.
 
 Make every test script executable, following the rule in the `new-feature` skill: `chmod +x`, then record the mode with `git add --chmod=+x <files>`, since Git does not pick up the bit on Windows or with `core.fileMode=false`. Tell the user that this stages the files.
 
@@ -34,11 +34,11 @@ Make every test script executable, following the rule in the `new-feature` skill
 6. **Failure paths** (`negative-tests.md`): invalid option values, verification failures, missing dependencies without `apt-get`, and, for a Feature for one distribution, the refusal on the others.
 7. **No-op paths** (scenario): when the Feature warns and changes nothing on a supported architecture, a scenario that turns the option on, on an image of a distribution the Feature is for. `test.sh` cannot cover this, because it runs with the default options, which do nothing anyway. The scenario runs on every architecture of the job, so its script branches on `uname -m`: where the Feature works, assert the effect; where it does not, assert that nothing changed.
 
-Scenarios pin their own `image`, so they run once per architecture rather than once per base image. Spread scenarios across the supported releases listed in `supported-platforms.md` instead of putting all of them on one image. Use only images that the `baseImage` matrix of the repository's test workflow lists, written as they are there, both for `image` and for the `FROM` of a scenario's Dockerfile. A scenario on any other image suggests support for a release that CI does not otherwise test, and it fails unrelated pull requests once that image stops being updated or is removed. Release numbers in the examples of this skill are illustrations; take the current ones from `supported-platforms.md`. When the two lists differ, the `baseImage` matrix decides what a scenario may use.
+Scenarios pin their own `image`, so they run once per architecture rather than once per base image. Spread scenarios across the supported releases listed in `supported-platforms.md` instead of putting all of them on one image. Use only images that the `baseImage` matrix of the reusable workflow called by the test jobs of the CI workflow (usually `test-feature.yaml`) lists, written as they are there, both for `image` and for the `FROM` of a scenario's Dockerfile. A scenario on any other image suggests support for a release that CI does not otherwise test, and it fails unrelated pull requests once that image stops being updated or is removed. Release numbers in the examples of this skill are illustrations; take the current ones from `supported-platforms.md`. When the two lists differ, the `baseImage` matrix decides what a scenario may use. When the repository has no CI workflow, use the "CI base images" list in `supported-platforms.md` instead.
 
 ## Test jobs
 
-The CLI does not decide where tests run; the test workflow does. `.github/workflows/test.yaml` has one job per Feature, named `test-<id>`, which calls the reusable workflow `.github/workflows/test-feature.yaml`:
+The CLI does not decide where tests run; the CI workflow does. The CI workflow is the workflow under `.github/workflows/` with the line `# dev-container-feature-development: ci`, usually `ci.yaml`; find it by that line, not by its file name, and never edit, move, or remove the line. When no workflow has it, suggest the `init-repository` skill, which creates the CI workflow or puts a lost line back. When the user declines, work on the files under `test/` only and do not edit any workflow, even one that tests the other Features: this plugin edits no workflow but the CI workflow it manages. Tell the user that the Feature has no test job until `init-repository` has run. The CI workflow has one job per Feature, named `test-<id>`, which calls the reusable workflow `.github/workflows/test-feature.yaml`:
 
 ```yaml
   test-mytool:
@@ -56,11 +56,19 @@ When `test/_global/scenarios.json` exists, a job named `test-global` does the sa
 
 A Feature cannot have the ID `global`, since its job would take the name `test-global`.
 
-Every job must also be listed under `needs` of the `tests-passed` job, which aggregates the results into the check that branch rules require. CI cannot detect a job that is absent: a Feature without a `test-<id>` job is never tested, and a job missing from `needs` can fail without blocking a merge, because the required `tests-passed` check still passes. After any of the changes below, run the `feature-reviewer` agent, which checks for both.
+Every job must also be listed under `needs` of the workflow's aggregate job: the job that runs with `if: always()` and fails unless every job under its `needs` succeeded, so that one check stands for all of them. It is the job with the comment line `# dev-container-feature-development: aggregate job` directly above its ID. Find it by that line, not by its name (`ci-passed` in the workflow that `init-repository` creates) and not by what its `needs` lists: before the first Feature it lists no test job, and `needs` may be absent. Never edit, move, or remove that line. The job may also list jobs that are not Feature tests. Do not add another one: the CI workflow has exactly one. When no job has the line, do not create an aggregate job or add the line here: tell the user that the test job is not part of any aggregate job, and suggest the `init-repository` skill, which puts the line back. CI cannot detect a job that is absent: a Feature without a `test-<id>` job is never tested, and a job missing from `needs` can fail while the aggregate job still passes. After any of the changes below, run the `feature-reviewer` agent, which checks for both.
 
-- **Adding a Feature**: add its `test-<id>` job and add `test-<id>` to `needs` of `tests-passed`, creating `needs` when it is absent.
+- **Adding a Feature**: add its `test-<id>` job and add `test-<id>` to `needs` of the aggregate job, creating `needs` when it is absent.
 - **Removing a Feature**: remove its job and its entry in `needs`, and check whether the global scenarios used it.
 - **Renaming a Feature**: change the job name, `feature`, and the entry in `needs`. The new ID cannot be `global`.
+- **Before removing or renaming a Feature**: its job goes away or changes its name, and so do the names of its checks, which branch rules may require. Read the required status checks of the default branch:
+
+  ```bash
+  gh api "repos/<owner>/<repo>/rules/branches/<default branch>" \
+    --jq '.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context'
+  ```
+
+  When one of them is the job's name or starts with it (the checks of a job that calls a reusable workflow carry the job's name as a prefix), tell the user that the rules have to be changed, and that the pull request cannot be merged until they are; changing them is the user's step. The command does not see classic branch protection and can fail for lack of permission; then say that the required checks could not be read. Make the change in either case.
 - **Changing the architectures of a Feature**: change the `uname -m` branches of `install.sh` and the Limitations of `NOTES.md` together with `architectures`, following the `feature-authoring` skill, since all three must agree. Leave out an architecture only when the upstream publishes no build for it. When the global scenarios use the Feature, narrow `architectures` of `test-global` to match.
 
 ## Writing assertion scripts

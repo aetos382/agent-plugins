@@ -78,9 +78,10 @@ jobs:
       fail-fast: false
       matrix:
         target: ${{ fromJSON(needs.targets.outputs.targets) }}
-        # Pinned to explicit releases rather than floating tags: tests-passed in test.yaml can gate the
-        # main branch, so an image moving to a new release under a floating tag would block every pull
-        # request, not just surface a warning. Bumping these is therefore a deliberate change.
+        # Pinned to explicit releases rather than floating tags, so that the releases tested are the
+        # ones listed here. Under a floating tag, an image moving to a new release would drop the old
+        # release from the tests without notice, and could fail every pull request at once. Bumping
+        # these is therefore a deliberate change.
         baseImage:
           - debian:12
           - debian:13
