@@ -18,7 +18,7 @@ Tests live in `test/<id>/`, mirroring `src/<id>/`. They run with `devcontainer f
 | `test/_global/scenarios.json` | Global scenario | Scenarios spanning several Features. |
 | `test/<id>/negative-tests.md` | Manual | Cases the CLI cannot express, run by `docker run`: failures, and second runs that the duplicate test cannot exercise. See below. |
 
-`test.sh` and a `scenarios.json` with at least one scenario are mandatory for every Feature, and `test/_global/scenarios.json`, when it exists, needs at least one scenario too. The test workflow fails without them: the CLI itself fails the auto-generated run without `test.sh`, but passes when no scenario runs. Every Feature also needs a job in the CI workflow, which names the architectures to test on (see "Test jobs" below); the global scenarios need one too.
+`test.sh` and a `scenarios.json` with at least one scenario are mandatory for every Feature, and `test/_global/scenarios.json`, when it exists, needs at least one scenario too. `test-feature.yaml` fails without them: the CLI itself fails the auto-generated run without `test.sh`, but passes when no scenario runs. Every Feature also needs a job in the CI workflow, which names the architectures to test on (see "Test jobs" below); the global scenarios need one too.
 
 Make every test script executable, following the rule in the `new-feature` skill: `chmod +x`, then record the mode with `git add --chmod=+x <files>`, since Git does not pick up the bit on Windows or with `core.fileMode=false`. Tell the user that this stages the files.
 
@@ -28,6 +28,8 @@ Make every test script executable, following the rule in the `new-feature` skill
 2. **Each option** (scenarios): one scenario per non-default value that changes behavior. Assert the effect of the option, not only that the build succeeded.
 3. **Non-root remote user** (scenario): use one of the non-root test images from `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md` (`mcr.microsoft.com/devcontainers/base` images) with `"remoteUser": "vscode"` whenever the Feature touches a user's home, a user-owned file, or `PATH`. The check runs as that user.
 4. **Bare image** (scenario, when the Feature installs dependencies): an official Debian or Ubuntu image with `"remoteUser": "root"`, where tools like `curl` are missing, to exercise dependency installation.
+
+   When none of items 2, 3, 4, and 7 applies, write the non-root scenario of item 3 anyway, with the default options: it checks that the remote user can run what the Feature installed, which `test.sh` does not, since it runs as root. Every Feature needs at least one scenario (see above).
 5. **Second runs** (`duplicate.sh`): when the Feature has options that change what is installed or configured. Assert what `NOTES.md` says a second run yields. The duplicate test installs with the non-default values first and with the defaults last, so where the later run wins, expect the result of `<OPTION>__DEFAULT`; where results add up, expect both. The duplicate test cannot exercise every Feature. Leave `duplicate.sh` out, and cover the second run with a case in `negative-tests.md` that runs `install.sh` twice, in these two situations:
    - The values the CLI picks fail on some base image, which fails the build. A Feature for one distribution refuses them on the others; so does any option whose valid values depend on the base image, such as a mirror URL.
    - The runs that matter are two runs with values set. The CLI never does that: its last run always uses the defaults, and for options without `enum` or `proposals` its first run does too. A Feature whose defaults do nothing is the usual case.
@@ -113,7 +115,8 @@ Complete examples are in `examples/`.
 }
 ```
 
-- Reference the Feature under test by its bare ID (`"mytool"`), not by a registry path.
+- Reference the Feature under test by its bare ID (`"mytool"`), not by a registry path. Every scenario of `test/<id>/scenarios.json` lists the Feature under test under `features`; a scenario without it passes without installing the Feature.
+- Write strict JSON, without comments or trailing commas. The CLI accepts both, but `test-feature.yaml` checks the file with `jq` and fails on them.
 - Other Features from the same repository can be referenced by bare ID too; published Features by full reference.
 - Pin image tags to a release (`debian:13`, not `debian:latest`) so that a new release does not break unrelated pull requests.
 
