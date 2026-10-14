@@ -112,6 +112,9 @@ jobs:
           fi
           # Decided by the exit status of jq, not by whether the unknown names it prints are empty: an
           # empty string in the input prints as an empty line, which would read as no unknown names.
+          # ShellCheck does not see that check passes the filter to jq, whose variables are meant to
+          # stay unexpanded.
+          # shellcheck disable=SC2016
           if ! check --argjson runners "${RUNNERS}" 'all(.[]; . as $arch | $runners | has($arch))' <<< "${ARCHITECTURES}"; then
             unknown="$(jq -c --argjson runners "${RUNNERS}" 'map(select(. as $arch | $runners | has($arch) | not))' <<< "${ARCHITECTURES}")"
             echo "::error::The architectures of '${FEATURE}' include ones this workflow does not test: ${unknown}. Supported: $(jq -c 'keys_unsorted' <<< "${RUNNERS}"). ${fix_architectures}"
