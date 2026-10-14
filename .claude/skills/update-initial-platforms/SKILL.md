@@ -5,7 +5,7 @@ description: dev-container-feature-development の初期値（init-repository �
 
 # 初期値の更新
 
-dev-container-feature-development の初期値を上流の最新に合わせる。初期値は、ワークフロー雛形 `plugins/dev-container-feature-development/skills/init-repository/assets/workflows/test-feature.yaml` の `baseImage` と `RUNNERS` だけに書いてある。選び方は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` の「Initial values」節に従う。対象アーキテクチャ（`RUNNERS` のキー）は上流のリリースに連動しないので、このスキルでは扱わない。ランナーのラベルは Ubuntu LTS の版で固定しているので、このスキルで扱う。
+dev-container-feature-development の初期値を上流の最新に合わせる。初期値は、ワークフロー雛形 `plugins/dev-container-feature-development/skills/init-repository/assets/workflows/test-feature.yaml` の `baseImage` と `RUNNERS` だけに書いてある。選び方は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` の「Initial values」節に従う。ランナーのラベルは Ubuntu LTS の版で固定しているので、このスキルで更新する。対象アーキテクチャ（`RUNNERS` のキー）は、GitHub がホステッド ランナーを提供するアーキテクチャから選んでいるので、このスキルで差を調べて報告する。ただし、足すか外すかは利用者が決め、このスキルは書き換えない。アーキテクチャを変えると、例の `architectures:` や本文の列挙（「amd64 と arm64」など）も直すことになるためである。
 
 対象のディストリビューションは、各 Features リポジトリが自分のテスト ワークフローで決める。初期値を変えても既存のリポジトリには届かない。`init-repository` を再実行したときに、初期値との差が計画に情報として出るだけである。
 
@@ -22,7 +22,7 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
    awk '/^Dist:/ { dist = $2 } /^Version:/ && /LTS/ { split($2, p, "."); print p[1] "." p[2], dist }' Temp/meta-release-lts
    ```
 
-   最後の 2 行が最新と 1 つ前の LTS（版とコードネーム）。`Supported:` フィールドはアップグレードの提供可否であり、リリース済みかどうかではないので判断に使わない。
+   最後の 2 行が最新と 1 つ前の LTS（版とコードネーム）。出力が 2 行未満なら、ファイルの形式が変わったものとして中断して報告する（`awk` は一致しなくても成功で終わる）。`Supported:` フィールドはアップグレードの提供可否であり、リリース済みかどうかではないので判断に使わない。
 
 2. **Debian stable と oldstable**（`<suite>` を `stable`、`oldstable` にしてそれぞれ実行）
 
@@ -31,7 +31,7 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
    grep -E '^(Version|Codename):' Temp/debian-<suite>-Release
    ```
 
-   `Version` のメジャー番号（`13.1` なら `13`）とコードネームを使う。
+   `Version` のメジャー番号（`13.1` なら `13`）とコードネームを使う。`Version` と `Codename` の 2 行がそろわなければ、中断して報告する。
 
 3. **devcontainers/base のタグ**
 
@@ -47,7 +47,9 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 
    [GitHub-hosted runners のリファレンス](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)の、標準ランナーの表（パブリック リポジトリ用とプライベート リポジトリ用）を読む。雛形の `RUNNERS` の全アーキテクチャについて、両方の表にラベルがある Ubuntu 版のうち最新のものを選ぶ（例: `ubuntu-24.04` と `ubuntu-24.04-arm`）。プレビューやベータと書かれたラベルは数えない。
 
-5. 結果を雛形の `baseImage` と `RUNNERS` と比べる。どちらも一致していれば、更新は不要と報告する。確認した日付を残すかを利用者に尋ね、残すなら 2 節で作るブランチで `supported-platforms.md` の日付だけを更新し、5 節に進む。残さないなら、ここで終わる。
+   同じ表から、Linux の標準ランナーがあるアーキテクチャを拾い、雛形の `RUNNERS` のキーと比べる。差があれば最後に報告する（書き換えない）。
+
+5. 結果を雛形の `baseImage` と `RUNNERS` と比べる。どちらも一致していれば、更新は不要と報告する。手順 1.3 で含められなかった Ubuntu 版と、手順 1.4 のアーキテクチャの差も、このとき報告する。確認した日付を残すかを利用者に尋ね、残すなら、2 節のブランチを作って `supported-platforms.md` の日付だけを更新し、5 節の手順 5.1 だけを行って 6 節へ進む。残さないなら、ここで終わる。
 
 ## 2. ブランチを作る
 
@@ -58,11 +60,18 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 
 - `baseImage` を、手順 1.1〜1.3 で調べた Debian、Ubuntu、devcontainers/base のタグを合わせた一覧にする。並びは `debian`、`ubuntu`、`mcr.microsoft.com/devcontainers/base` の順で、それぞれバージョンの昇順。イメージ名は `debian:<major>`、`ubuntu:<version>`、`mcr.microsoft.com/devcontainers/base:<major>-ubuntu<version>` とする。
 - `RUNNERS` の各ランナーを、手順 1.4 で選んだラベルにする。キーとその並びは変えない。
-- `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` の「Last checked against upstream release information」の日付を今日にする。変更が無く手順 1.5 で終えたときも、その日付だけを更新してよい。
+- `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` の「Last checked against upstream release information」の日付を今日にする。
 
 ## 4. 原則を確かめ、他の箇所を合わせる
 
-1. 書き換えた雛形が、`plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` の「Principles」を満たすことを確かめる。`baseImage` のどのイメージもリリースのタグを持つ（`latest` やタグなしではない）こと、`mcr.microsoft.com/devcontainers/base` のイメージが 1 つ以上あること、`RUNNERS` のどのランナーも Ubuntu の版を名指しする（`ubuntu-latest` ではない）ことである。
+1. 書き換えた雛形が、`plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` の「Principles」を満たすことを確かめる。`baseImage` のどのイメージもリリースのタグを持つ（`latest` やタグなしではない）こと、`mcr.microsoft.com/devcontainers/base` のイメージが 1 つ以上あること、`RUNNERS` のどのランナーも Ubuntu の版を名指しし（`ubuntu-latest` ではない）、異なるキーが同じランナーを指していないことである。あわせて、`RUNNERS` が JSON として読めることを確かめる。actionlint は `env` の文字列の中身を見ないので、壊れていても CI は通り、雛形から作った全リポジトリの `targets` ジョブが落ちる。
+
+   ```bash
+   awk 'section && NF && match($0, /^ */) && RLENGTH <= indent { exit } section { print; next } /^ *RUNNERS: \|$/ { section = 1; match($0, /^ */); indent = RLENGTH }' plugins/dev-container-feature-development/skills/init-repository/assets/workflows/test-feature.yaml > Temp/runners.json
+   jq -e 'type == "object" and length > 0 and all(.[]; type == "string") and ([.[]] | length == (unique | length))' Temp/runners.json
+   ```
+
+   `jq` が `true` を出さなければ、中断して報告する。
 2. プラグインと rules に書かれたイメージ名、リリース番号、ランナー名を洗い出す。
 
    ```bash
@@ -87,7 +96,7 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 ## 5. 検証とバージョン
 
 1. `claude plugin validate --strict plugins/dev-container-feature-development` を実行する。変更したシェル スクリプトがあれば `shellcheck` も実行する。
-2. `plugins/dev-container-feature-development/.claude-plugin/plugin.json` の `version` のマイナー バージョンを上げる（パッチは 0 に戻す）。ただし、このブランチで既に `origin/main` より上がっていれば、そのままにする。
+2. `plugins/dev-container-feature-development/.claude-plugin/plugin.json` の `version` のマイナー バージョンを上げる（パッチは 0 に戻す）。ただし、このブランチで既に `origin/main` より上がっていれば、そのままにする。日付だけを変えたときは上げない。利用者に届けたい変更ではないためである。
 
 ## 6. 報告
 
@@ -96,4 +105,5 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 - 追加・削除したイメージと、変更したランナー
 - 4 節で行った置き換えのうち、機械的でないもの
 - まだ devcontainers/base に variant がなく、含められなかった Ubuntu 版（公開後にこのスキルを再実行すれば追加される）
+- 手順 1.4 で見つけた、GitHub の Linux 標準ランナーのアーキテクチャと雛形の `RUNNERS` のキーとの差（足すかどうかは利用者が決める）
 - 次に行うこと: コミットとプル リクエストの作成（指示があれば行う）。既存の Features リポジトリの一覧は変わらない。各リポジトリで一覧を変えるかどうかはそのリポジトリが決める。`/dev-container-feature-development:init-repository` を再実行すれば、初期値との差が計画に出る。

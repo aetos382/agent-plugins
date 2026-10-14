@@ -24,7 +24,7 @@ Feature 実行環境となる Dev Container の OS とアーキテクチャに�
 - プラグインに残すのは原則と初期値である。原則は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` に書く。
   - サポートと呼べるのは、CI でテストしているものだけである。
   - テストしていないディストリビューションは、`NOTES.md` にそう書く。その他のディストリビューションは、パッケージ マネージャーの分岐を足す程度で済む場合のみサポートする。
-  - ベース イメージのタグとランナーのラベルは、リリースで固定する（digest を足すのはよい）。
+  - ベース イメージのタグは、リリースで固定する（digest を足すのはよい）。`RUNNERS` の GitHub ホステッド ランナーのラベルも、リリースで固定する。セルフホステッド ランナーをどう固定するかは、リポジトリに任せる。Feature を実行しないジョブ（`targets` や集約ジョブ）は `ubuntu-latest` でよい。
   - 一覧には `mcr.microsoft.com/devcontainers/base` のイメージを 1 つ以上含める。Feature を入れる先のほとんどがこのイメージから派生していること、非 root の `vscode` ユーザーで `_REMOTE_USER` の経路を試せることの 2 つが理由である。
   - 各アーキテクチャは、そのアーキテクチャのネイティブ ランナーでテストする。GitHub ホステッドかセルフホステッドかは、リポジトリが決める。
 - 初期値は、`init-repository` の雛形 `plugins/dev-container-feature-development/skills/init-repository/assets/workflows/test-feature.yaml` の `baseImage` と `RUNNERS` にだけ書く。選び方は `supported-platforms.md` の「Initial values」にだけ書き、ここや README には写さない。これは規則ではなく、妥当な選択の 1 つである。
@@ -32,13 +32,13 @@ Feature 実行環境となる Dev Container の OS とアーキテクチャに�
   - `devcontainers/base` の Ubuntu 版と Debian 版は別々のイメージ定義からビルドされ、バージョン番号も別々に付く。メジャー バージョンは片方の系列にしか当てはまらない（例：`3` は Ubuntu 版のメジャー バージョンで、Debian の variant はない）。
   - プラグイン内の例に書くイメージ名、リリース番号、アーキテクチャは、雛形の初期値から選ぶ。CI ランナー名は雛形の `RUNNERS` 以外に書かない。
   - 例と雛形が一致しているかは、CI では検査しない。例の値は説明のためのもので、食い違っても利用者のリポジトリは壊れない（例をまねたシナリオは、そのリポジトリの一覧を見る `feature-reviewer` が指摘する。CI は、シナリオのイメージが一覧にあるかを検査しない）。食い違いが生まれるのは雛形の初期値を変えたときだけなので、そのときに `/update-initial-platforms` スキルの手順で合わせる。
-  - 上流の新しいリリース（Ubuntu LTS、Debian stable、`devcontainers/base` の新しいイメージやメジャー バージョン、GitHub ホステッド ランナーの新しい Ubuntu 版）は自動では検出しない。気づいたら `/update-initial-platforms` スキルで初期値と例を更新する。既存のリポジトリが新しいリリースにどう追従するか（Renovate の custom manager など）は、各リポジトリが決める。
+  - 上流の新しいリリース（Ubuntu LTS、Debian stable、`devcontainers/base` の新しいイメージやメジャー バージョン、GitHub ホステッド ランナーの新しい Ubuntu 版や新しいアーキテクチャ）は自動では検出しない。気づいたら `/update-initial-platforms` スキルで初期値と例を更新する。既存のリポジトリが新しいリリースにどう追従するか（Renovate の custom manager など）は、各リポジトリが決める。
 - 目的が一部のディストリビューションでしか意味を持たない Feature（Ubuntu にしかパッケージを配らない Launchpad の PPA を足すものなど）は、他のディストリビューションで働かなくてよい。既定のオプションでは何もせず、対象外のディストリビューションでオプションを有効にしたら失敗させる。ベース イメージは `devcontainer.json` で決まり、誰がビルドしても同じ結果になるので、止めてよい。一覧は分けない。
 
 ## 対象アーキテクチャ
 
 - リポジトリの `RUNNERS` のキーにあるアーキテクチャをサポートし、CI でそれぞれのネイティブ ランナーでテストする。CI でテストできないアーキテクチャはサポートしない。
-- 各 Feature は対象アーキテクチャを、CI ワークフロー `ci.yaml` の `test-<id>` ジョブの `architectures` に明示する。再利用可能ワークフロー `test-feature.yaml` の `architectures` 入力は必須とし、既定値は設けない。リポジトリが `RUNNERS` にアーキテクチャを足したときに、upstream にビルドがない Feature まで黙ってテスト対象に広がるのを防ぐため。
+- 各 Feature は対象アーキテクチャを、CI ワークフロー（通常は `ci.yaml`）の `test-<id>` ジョブの `architectures` に明示する。再利用可能ワークフロー `test-feature.yaml` の `architectures` 入力は必須とし、既定値は設けない。リポジトリが `RUNNERS` にアーキテクチャを足したときに、upstream にビルドがない Feature まで黙ってテスト対象に広がるのを防ぐため。
 - CI ワークフローは Feature ごとのテスト ジョブを YAML に書き並べる。`src/` から Feature を列挙して matrix に展開する方式は採らない。matrix には 1 つあたり 256 ジョブの上限があり、Feature 数 × アーキテクチャ数 × baseImage 数ですぐに達するため。ジョブや集約ジョブの `needs` の書き漏れは CI では検出せず、`feature-reviewer` エージェントで検出する（「利用の前提」を参照）。
 - upstream がビルドを公開していないアーキテクチャに限り、Feature の対象から外してよい。そのアーキテクチャでは失敗させる。何もせずに成功させると、ツールが入っていないコンテナーができ、利用者は後からコマンドが無いことで気づくためである。
 - Feature のすることがそのアーキテクチャでは意味を持たない場合（書き換える対象が無いなど）は、失敗させずに、警告を出して何もしない。同じ `devcontainer.json` を複数のアーキテクチャでビルドするので、失敗させると片方の利用者だけがビルドできなくなるためである。この経路も CI でテストする。

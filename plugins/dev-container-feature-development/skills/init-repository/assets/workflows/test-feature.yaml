@@ -38,7 +38,9 @@ jobs:
           # that architecture, pinned to a release like the base images below. The test jobs of the
           # CI workflow name only these keys in architectures. This object and the baseImage matrix
           # belong to the repository: the dev-container-feature-development plugin reads them as
-          # the supported platforms and does not change them once written.
+          # the supported platforms, and its init-repository skill does not change them once
+          # written. Change them only together with what depends on them, as the feature-testing
+          # skill of that plugin describes.
           RUNNERS: |
             {
               "amd64": "ubuntu-24.04",
@@ -149,7 +151,9 @@ jobs:
         # Pinned to explicit releases rather than floating tags, so that the releases tested are the
         # ones listed here. Under a floating tag, an image moving to a new release would drop the old
         # release from the tests without notice, and could fail every pull request at once. Bumping
-        # these is therefore a deliberate change.
+        # these is therefore a deliberate change, made together with the scenarios and each
+        # Feature's NOTES.md, as the feature-testing skill of the dev-container-feature-development
+        # plugin describes.
         baseImage:
           - debian:12
           - debian:13

@@ -30,7 +30,7 @@ A Claude Code plugin for authoring, testing, and releasing [Dev Container Featur
 
 ## Conventions applied to Features
 
-- Each repository decides the distributions and architectures it supports, as the `baseImage` matrix and the keys of `RUNNERS` in its reusable test workflow `test-feature.yaml`. Features must work on every base image there, and CI tests them all. Only what CI tests counts as supported. Other distributions are supported only when that costs no more than a package-manager branch, and are documented as untested.
+- Each repository decides the distributions and architectures it supports, as the `baseImage` matrix and the keys of `RUNNERS` in its reusable test workflow (usually `test-feature.yaml`). Features must work on every base image there, and CI tests them all. Only what CI tests counts as supported. Other distributions are supported only when that costs no more than a package-manager branch, and are documented as untested.
 - The base images are pinned to releases and include at least one `mcr.microsoft.com/devcontainers/base` image, which most dev containers are built on and which tests a non-root user. Each architecture is tested on a native runner of that architecture. A new repository starts from the initial values in the `init-repository` template; [supported-platforms.md](skills/feature-authoring/references/supported-platforms.md) explains how they are chosen. `init-repository` never changes these lists in an existing repository.
 - Each Feature lists its architectures in its job in the CI workflow, and may leave one out only when the upstream publishes no build for it.
 - Missing dependencies are installed with `apt-get`. Without `apt-get`, the Feature fails with a message naming what is missing.
