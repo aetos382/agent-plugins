@@ -35,19 +35,17 @@ Tests execute code from the repository: `install.sh` and scenario configurations
 
 Run locally when both `command -v devcontainer` and `docker info` succeed. Otherwise use CI (section 5) and tell the user why local execution was not possible (no Docker daemon, or no Dev Container CLI; the CLI installs with `npm install -g @devcontainers/cli`).
 
-A local run covers only the architecture of the Docker host: `docker info --format '{{.Architecture}}'` reports it as `uname -m` does, and the "Architectures" table of `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md` maps that to an architecture name. Compare it with the `architectures` of each target's job in the CI workflow (`test-<id>`, or `test-global` for `test/_global`), described in the `feature-testing` skill:
+A local run covers only the architecture of the Docker host: `docker info --format '{{.Architecture}}'` reports it as `uname -m` does, and the "Architecture names" table of `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md` maps that to an architecture name. The supported architectures are the keys of `RUNNERS` in the reusable workflow called by the test jobs of the CI workflow; when the CI workflow has no test job yet, or the repository has no CI workflow, `supported-platforms.md` says where to read them instead. When the host's architecture is not in that table, or its name is not a supported architecture, no Feature can be tested locally on this host: use CI. Otherwise compare it with the `architectures` of each target's job in the CI workflow (`test-<id>`, or `test-global` for `test/_global`), described in the `feature-testing` skill:
 
 - A target that does not list the host architecture cannot be tested locally. Use CI for it.
 - The listed architectures other than the host's are covered only by CI. After the local run, offer to check them with section 5, and until then report them as not run. Never report a Feature as tested on an architecture that only the local run covered, or on one that nothing ran.
-- A target without a job is not tested by CI at all, and nothing in CI reports it. Report it, and offer the `feature-testing` skill.
+- A target without a job, including every target when the repository has no CI workflow, is not tested by CI at all, and nothing in CI reports it. Run it locally on the host architecture anyway, and report every other supported architecture as not run. Report that it has no job, and offer the `feature-testing` skill, which adds the job; when the repository has no CI workflow, offer the `init-repository` skill instead, since `feature-testing` adds no job without it.
 
 ## 3. Run locally
 
 ### Base images
 
-Read the `baseImage` list from the matrix of the reusable workflow called by the test jobs of the CI workflow (usually `.github/workflows/test-feature.yaml`), so that local runs match CI. The CI workflow is the workflow under `.github/workflows/` with the line `# dev-container-feature-development: ci`; do not read other workflows, even ones that run `devcontainer features test`. When the repository has no CI workflow, use the "CI base images" list in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md`.
-
-When the workflow's list differs from that file, run with the workflow's list, and mention the difference in the report: the repository may not have been updated for a new release yet.
+Read the `baseImage` list from the matrix of the reusable workflow called by the test jobs of the CI workflow (usually `.github/workflows/test-feature.yaml`), so that local runs match CI. The CI workflow is the workflow under `.github/workflows/` with the line `# dev-container-feature-development: ci`; do not read other workflows, even ones that run `devcontainer features test`. That list is the repository's set of supported base images; run with it as it is, including any digest, even when it differs from the initial values of this plugin's template. When the CI workflow has no test job yet, read the matrix of `.github/workflows/test-feature.yaml`. When the repository has no CI workflow, or no such file either, use the `baseImage` matrix of `${CLAUDE_PLUGIN_ROOT}/skills/init-repository/assets/workflows/test-feature.yaml`, the initial values that `init-repository` would write, and say in the report that the list is not the repository's.
 
 ### Commands
 

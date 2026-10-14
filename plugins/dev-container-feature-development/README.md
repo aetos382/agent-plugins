@@ -30,8 +30,9 @@ A Claude Code plugin for authoring, testing, and releasing [Dev Container Featur
 
 ## Conventions applied to Features
 
-- Features must work on Ubuntu 26.04, Ubuntu 24.04, Debian 13, and Debian 12 (the latest two Ubuntu LTS releases and Debian stable and oldstable), and CI tests them all, plus `mcr.microsoft.com/devcontainers/base:3-ubuntu26.04` and `mcr.microsoft.com/devcontainers/base:3-ubuntu24.04` for a non-root user. Other distributions are supported only when that costs no more than a package-manager branch.
-- Features support amd64 and arm64, and CI tests each on a native GitHub-hosted runner of that architecture (listed in [supported-platforms.md](skills/feature-authoring/references/supported-platforms.md)). Each Feature lists its architectures in its job in the CI workflow, and may leave one out only when the upstream publishes no build for it.
+- Each repository decides the distributions and architectures it supports, as the `baseImage` matrix and the runners of its reusable test workflow `test-feature.yaml`. Features must work on every base image there, and CI tests them all. Only what CI tests counts as supported. Other distributions are supported only when that costs no more than a package-manager branch, and are documented as untested.
+- The base images are pinned to releases and include at least one `mcr.microsoft.com/devcontainers/base` image, which most dev containers are built on and which tests a non-root user. Each architecture is tested on a native GitHub-hosted runner. A new repository starts with the latest two Ubuntu LTS releases, Debian stable and oldstable, the matching `devcontainers/base` images, and amd64 and arm64; see [supported-platforms.md](skills/feature-authoring/references/supported-platforms.md). `init-repository` never changes these lists in an existing repository.
+- Each Feature lists its architectures in its job in the CI workflow, and may leave one out only when the upstream publishes no build for it.
 - Missing dependencies are installed with `apt-get`. Without `apt-get`, the Feature fails with a message naming what is missing.
 - Downloads are verified by checksum or signature.
 - Dependencies, tested distributions, and tested architectures are documented in each Feature's `NOTES.md`.

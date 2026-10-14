@@ -33,11 +33,11 @@ Only files inside `src/<id>/` are packaged. Anything `install.sh` needs at build
 
 ## Supported platforms
 
-Every Feature must work on the latest two Ubuntu LTS releases and on Debian stable and oldstable, and CI tests all of them, plus `mcr.microsoft.com/devcontainers/base` images with a non-root user. Read `references/supported-platforms.md` for the current releases, image names, and architectures; it is the single source of truth, so never take them from memory or from other files.
+The repository decides which platforms it supports, in the reusable workflow called by the test jobs of the CI workflow (usually `.github/workflows/test-feature.yaml`): the base images of its `baseImage` matrix, and the architectures that are keys of its `RUNNERS`. Every Feature must work on each of those base images, and CI tests all of them. Read the lists from that workflow whenever they matter; never take them from memory, from this plugin's examples, or from other workflows. When the CI workflow has no test job yet, or the repository has no CI workflow, `references/supported-platforms.md` says where to read them instead. It also explains the principles the lists follow and the initial values a new repository starts from.
 
-Other distributions are supported only when doing so costs no more than a package-manager branch. Never state or imply support that has not been tested: `NOTES.md` must say that only the supported distributions are tested. A platform counts as tested only when CI runs it; a local run covers just the developer's machine.
+Other distributions are supported only when doing so costs no more than a package-manager branch. Never state or imply support that has not been tested: `NOTES.md` must say that only the distributions of the repository's list are tested. A platform counts as tested only when CI runs it; a local run covers just the developer's machine.
 
-Every Feature supports every architecture in `references/supported-platforms.md` and lists them in `architectures` of its `test-<id>` job in the CI workflow, which runs the tests on a native runner of each architecture (see the `feature-testing` skill). The list is required even when it names them all, so that adding an architecture to the plugin later does not silently extend Features whose upstream has no build for it. Leave an architecture out only when the upstream publishes no build for it; then `install.sh` fails on it with a message saying so, and `NOTES.md` explains the gap. Architectures missing from `references/supported-platforms.md` are not supported at all, because CI cannot test them.
+Every Feature supports every architecture of `RUNNERS` and lists them in `architectures` of its `test-<id>` job in the CI workflow, which runs the tests on a native runner of each architecture (see the `feature-testing` skill). The list is required even when it names them all, so that adding an architecture to `RUNNERS` later does not silently extend Features whose upstream has no build for it. Leave an architecture out only when the upstream publishes no build for it; then `install.sh` fails on it with a message saying so, and `NOTES.md` explains the gap. Architectures that are not keys of `RUNNERS` are not supported at all, because CI cannot test them.
 
 ### Features for one distribution
 
@@ -94,7 +94,7 @@ Use these sections, omitting any that would be empty:
 
 - `## How it works` — what the script installs or changes, where, and why that method was chosen; what a second run on the same image yields (the later options win, the results add up, or what exists is kept).
 - `## Requirements` — dependencies; what `apt-get` installs automatically; what images without `apt-get` must provide.
-- `## Limitations` — tested distributions (from `references/supported-platforms.md`) and the statement that other distributions are untested; tested architectures (those in the Feature's test job), and why any architecture of `references/supported-platforms.md` is missing; for a Feature for one distribution, which distributions it is for and why; when the script warns and changes nothing; known gaps.
+- `## Limitations` — tested distributions (those of the repository's `baseImage` matrix) and the statement that other distributions are untested; tested architectures (those in the Feature's test job), and why any architecture of `RUNNERS` is missing; for a Feature for one distribution, which distributions it is for and why; when the script warns and changes nothing; known gaps.
 
 `examples/NOTES.md` shows the expected shape.
 
@@ -106,7 +106,7 @@ Use these sections, omitting any that would be empty:
 
 ## Additional resources
 
-- **`references/supported-platforms.md`** — supported releases, test images, the CI base-image list, and architectures with their CI runners.
+- **`references/supported-platforms.md`** — where a repository defines its supported base images and architectures, the principles they follow, and the initial values of a new repository.
 - **`references/install-script.md`** — code patterns for install.sh: root check, dependency probing, architecture mapping, version resolution, option validation, verified downloads, temp-dir cleanup, per-user setup, idempotency.
 - **`references/feature-json.md`** — devcontainer-feature.json property reference, option-to-environment mapping, lifecycle hooks, install order.
 - **`examples/install.sh`** — a complete install.sh that downloads a release binary, verifies its checksum, and installs it.

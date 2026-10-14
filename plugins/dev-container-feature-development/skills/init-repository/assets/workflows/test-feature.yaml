@@ -34,8 +34,11 @@ jobs:
         env:
           FEATURE: ${{ inputs.feature }}
           ARCHITECTURES: ${{ inputs.architectures }}
-          # The runner for each architecture, as listed in the "Architectures" table of
-          # supported-platforms.md in the dev-container-feature-development plugin.
+          # The architectures this repository supports, each mapped to a GitHub-hosted runner of
+          # that architecture, pinned to a release like the base images below. The test jobs of the
+          # CI workflow name only these keys in architectures. This object and the baseImage matrix
+          # belong to the repository: the dev-container-feature-development plugin reads them as
+          # the supported platforms and does not change them once written.
           RUNNERS: |
             {
               "amd64": "ubuntu-24.04",
@@ -139,6 +142,10 @@ jobs:
       fail-fast: false
       matrix:
         arch: ${{ fromJSON(needs.targets.outputs.architectures) }}
+        # The base images this repository supports; every Feature is tested on each of them. Keep at
+        # least one mcr.microsoft.com/devcontainers/base image: most dev containers are built on it,
+        # and its non-root vscode user is what the non-root scenarios run as.
+        #
         # Pinned to explicit releases rather than floating tags, so that the releases tested are the
         # ones listed here. Under a floating tag, an image moving to a new release would drop the old
         # release from the tests without notice, and could fail every pull request at once. Bumping
