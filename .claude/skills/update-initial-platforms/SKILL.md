@@ -41,13 +41,13 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
    grep -E '^[0-9]+-ubuntu[0-9]+\.[0-9]+$' Temp/mcr-base-tags.txt
    ```
 
-   手順 1 の Ubuntu 版それぞれについて、`<major>-ubuntu<version>` があるもののうち `<major>` が最大のタグを選ぶ。Ubuntu 版と Debian 版はバージョン番号が別々なので、Debian の variant のタグにない `<major>` があっても、提供が打ち切られたわけではない。該当するタグがない Ubuntu 版（リリース直後で未公開）は含めず、その旨を最後に報告する。選んだタグが 1 つも無ければ、`devcontainers/base` のイメージを 1 つ以上含めるという原則を満たせないので、中断して報告する。
+   手順 1.1 の Ubuntu 版それぞれについて、`<major>-ubuntu<version>` があるもののうち `<major>` が最大のタグを選ぶ。Ubuntu 版と Debian 版はバージョン番号が別々なので、Debian の variant のタグにない `<major>` があっても、提供が打ち切られたわけではない。該当するタグがない Ubuntu 版（リリース直後で未公開）は含めず、その旨を最後に報告する。選んだタグが 1 つも無ければ、`devcontainers/base` のイメージを 1 つ以上含めるという原則を満たせないので、中断して報告する。
 
 4. **GitHub ホステッド ランナー**
 
    [GitHub-hosted runners のリファレンス](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)の、標準ランナーの表（パブリック リポジトリ用とプライベート リポジトリ用）を読む。雛形の `RUNNERS` の全アーキテクチャについて、両方の表にラベルがある Ubuntu 版のうち最新のものを選ぶ（例: `ubuntu-24.04` と `ubuntu-24.04-arm`）。プレビューやベータと書かれたラベルは数えない。
 
-5. 結果を雛形の `baseImage` と `RUNNERS` と比べる。どちらも一致していれば、更新は不要と報告して終わる。
+5. 結果を雛形の `baseImage` と `RUNNERS` と比べる。どちらも一致していれば、更新は不要と報告する。確認した日付を残すかを利用者に尋ね、残すなら 2 節で作るブランチで `supported-platforms.md` の日付だけを更新し、5 節に進む。残さないなら、ここで終わる。
 
 ## 2. ブランチを作る
 
@@ -56,8 +56,9 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 
 ## 3. 雛形を書き換える
 
-- `baseImage` を、手順 1 の Debian、Ubuntu、devcontainers/base のタグを合わせた一覧にする。並びは `debian`、`ubuntu`、`mcr.microsoft.com/devcontainers/base` の順で、それぞれバージョンの昇順。イメージ名は `debian:<major>`、`ubuntu:<version>`、`mcr.microsoft.com/devcontainers/base:<major>-ubuntu<version>` とする。
+- `baseImage` を、手順 1.1〜1.3 で調べた Debian、Ubuntu、devcontainers/base のタグを合わせた一覧にする。並びは `debian`、`ubuntu`、`mcr.microsoft.com/devcontainers/base` の順で、それぞれバージョンの昇順。イメージ名は `debian:<major>`、`ubuntu:<version>`、`mcr.microsoft.com/devcontainers/base:<major>-ubuntu<version>` とする。
 - `RUNNERS` の各ランナーを、手順 1.4 で選んだラベルにする。キーとその並びは変えない。
+- `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` の「Last checked against upstream release information」の日付を今日にする。変更が無く手順 1.5 で終えたときも、その日付だけを更新してよい。
 
 ## 4. 原則を確かめ、他の箇所を合わせる
 
@@ -68,7 +69,7 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
    git grep -n -E -e '\b(ubuntu:[0-9]{2}\.[0-9]{2}|debian:[0-9]+)\b' -e 'mcr\.microsoft\.com/devcontainers/base:[A-Za-z0-9._-]+' -e '\b(Ubuntu [0-9]{2}\.[0-9]{2}|Debian [0-9]{1,2})\b' -e '\bubuntu-[0-9]{2}\.[0-9]{2}' -- plugins/dev-container-feature-development .claude/rules
    ```
 
-   雛形 `test-feature.yaml` 自身の行を除き、雛形の `baseImage` に無いイメージ、そこに無いリリース、`RUNNERS` 以外に書かれたランナー名を、次の規則で直す。
+   雛形 `test-feature.yaml` の `baseImage` と `RUNNERS` の行を除き（同じファイルのコメントの例は対象にする）、雛形の `baseImage` に無いイメージ、そこに無いリリース、`RUNNERS` 以外に書かれたランナー名を、次の規則で直す。
 
    | 箇所 | 置き換え方 |
    |---|---|
@@ -79,8 +80,8 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 
    直した後にもう一度実行し、残りが無いことを確かめる。
 
-3. 手順 2 は書かれた名前しか見ず、列挙の漏れは見つけない。`plugins/dev-container-feature-development/skills/feature-authoring/examples/NOTES.md` の Limitations 節は雛形と突き合わせ、追加された版が漏れていれば直す。
-4. 手順 2 はコードネームも見ない。外れたリリースのコードネーム（例: `Bookworm`）で `plugins/dev-container-feature-development` と `.claude/rules` を検索し、見つかれば直す。
+3. 手順 4.2 は書かれた名前しか見ず、列挙の漏れは見つけない。`plugins/dev-container-feature-development/skills/feature-authoring/examples/NOTES.md` の Limitations 節は雛形と突き合わせ、追加された版が漏れていれば直す。
+4. 手順 4.2 はコードネームも見ない。外れたリリースのコードネーム（例: `Bookworm`）で `plugins/dev-container-feature-development` と `.claude/rules` を検索し、見つかれば直す。
 5. `architectures: '[...]'` の形の例（`ci.yaml` 雛形のコメント、`feature-testing` のテスト ジョブの例）は、アーキテクチャを変えないこのスキルでは直す必要がない。
 
 ## 5. 検証とバージョン
@@ -93,6 +94,6 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 次を報告する。
 
 - 追加・削除したイメージと、変更したランナー
-- 手順 4 で行った置き換えのうち、機械的でないもの
+- 4 節で行った置き換えのうち、機械的でないもの
 - まだ devcontainers/base に variant がなく、含められなかった Ubuntu 版（公開後にこのスキルを再実行すれば追加される）
 - 次に行うこと: コミットとプル リクエストの作成（指示があれば行う）。既存の Features リポジトリの一覧は変わらない。各リポジトリで一覧を変えるかどうかはそのリポジトリが決める。`/dev-container-feature-development:init-repository` を再実行すれば、初期値との差が計画に出る。

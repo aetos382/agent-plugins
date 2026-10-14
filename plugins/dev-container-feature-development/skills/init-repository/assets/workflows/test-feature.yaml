@@ -6,8 +6,8 @@ on:
         description: "The ID of the Feature to test, or _global for the scenarios in test/_global."
         type: string
         required: true
-      # There is no default: a default would silently extend every Feature to an architecture added
-      # to it later, including Features whose upstream has no build for it.
+      # There is no default: a default would silently extend every Feature to an architecture added to
+      # RUNNERS later, including Features whose upstream has no build for it.
       architectures:
         description: 'The architectures to test on, as a JSON array such as ["amd64", "arm64"].'
         type: string
@@ -34,7 +34,7 @@ jobs:
         env:
           FEATURE: ${{ inputs.feature }}
           ARCHITECTURES: ${{ inputs.architectures }}
-          # The architectures this repository supports, each mapped to a GitHub-hosted runner of
+          # The architectures this repository supports, each mapped to a native runner of
           # that architecture, pinned to a release like the base images below. The test jobs of the
           # CI workflow name only these keys in architectures. This object and the baseImage matrix
           # belong to the repository: the dev-container-feature-development plugin reads them as

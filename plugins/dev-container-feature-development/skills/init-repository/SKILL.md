@@ -133,7 +133,7 @@ The CI workflow template has no Feature jobs. Keep the existing `test-<id>` jobs
 
 - **A new `test-feature.yaml`** gets the template's entries, which are the initial values.
 - **An existing one** keeps its entries, in its order, even when they differ from the template's. Never add, remove, or replace a base image, an architecture, or a runner to match the template, and never drop a digest pinned to an image.
-- In the plan, list as information how the existing entries differ from the template's: base images that only one side has, comparing them without any `@sha256:` digest, and architectures or runners that differ. Say that the template's entries are only the plugin's current initial values, and that the user can change the repository's lists separately, together with each Feature's `NOTES.md`. Also note any principle of `supported-platforms.md` that the existing lists break: a base image not pinned to a release, no `mcr.microsoft.com/devcontainers/base` image, or a runner not pinned to a release. Do not fix these as part of this plan.
+- In the plan, list as information how the existing entries differ from the template's: base images that only one side has, comparing them without any `@sha256:` digest, and architectures or runners that differ. Say that the template's entries are only the plugin's current initial values, and that the user can change the repository's lists separately, as "Changing a repository's lists" in `supported-platforms.md` describes. Also note any principle of `supported-platforms.md` that the existing lists break, among those that can be checked from the lists alone, as listed at the end of its "Principles". Do not fix these as part of this plan.
 
 The architectures that the rest of this section calls supported are the keys of `RUNNERS` in the repository's `test-feature.yaml` after this plan: the existing ones, or the template's in a new file.
 
@@ -145,7 +145,7 @@ Choose the architectures of each new job as follows. When the repository has `te
 - When it does not branch, the Feature is architecture-independent as far as the script goes; start from all supported architectures.
 - Either way, check that what the Feature installs exists for each proposed architecture, as the `new-feature` skill does: the upstream's release assets for a download, or the package's architectures for an apt repository, since a third-party repository may publish amd64 only. Leave out an architecture only when that check shows it has no build, and say which check that was.
 
-For a new `test-global`, propose the architectures common to the Features its scenarios use. When the existing workflow did not run the Features on arm64, note that the first run there may still fail.
+For a new `test-global`, propose the architectures common to the Features its scenarios use. When the existing workflows did not run a Feature on an architecture that its new job lists, note that the first run there may still fail.
 
 The CI workflow and the reusable workflow must land in the same commit or pull request: the CI workflow calls the reusable one.
 

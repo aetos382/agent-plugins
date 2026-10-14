@@ -20,18 +20,18 @@ Feature 実行環境となる Dev Container の OS とアーキテクチャに�
   - 正本は、そのリポジトリの CI ワークフローのテスト ジョブが呼ぶ再利用可能ワークフロー（通常は `test-feature.yaml`）の `baseImage` の一覧と、`RUNNERS` のキーである。「サポート対象とは、そのリポジトリの CI がテストしているもの」という定義になる。一覧のファイルを別に設けない。
   - Feature ごとには持たない。新しい LTS が出るたびに全 Feature を直すことになり、ほとんどが同じ内容の写しになるためである。アーキテクチャを Feature ごとに `architectures` で絞れるのは、upstream にビルドが無いアーキテクチャが Feature ごとに違うからで、ディストリビューションにはその事情がほとんど無い。
   - スキルとエージェントは、一覧をリポジトリのワークフローから読む。具体的なリリース、イメージ名、アーキテクチャを、規則として本文に書かない。例の中に書くのはよい。
-  - `init-repository` は、既存のリポジトリの `baseImage` と `RUNNERS` を雛形に合わせて書き換えない。雛形の初期値との差を、計画に情報として挙げるだけである。
+  - `init-repository` は、既存のリポジトリの `baseImage` と `RUNNERS` を雛形に合わせて書き換えない。雛形の初期値との差を、計画に情報として挙げるだけである。一覧を変えるときに一緒に直すもの（シナリオのイメージ、各 Feature の `NOTES.md`、ジョブの `architectures`）は、`supported-platforms.md` の「Changing a repository's lists」に書き、`feature-reviewer` が一覧の変更時に全 Feature を照らす。
 - プラグインに残すのは原則と初期値である。原則は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` に書く。
   - サポートと呼べるのは、CI でテストしているものだけである。
   - テストしていないディストリビューションは、`NOTES.md` にそう書く。その他のディストリビューションは、パッケージ マネージャーの分岐を足す程度で済む場合のみサポートする。
   - ベース イメージのタグとランナーのラベルは、リリースで固定する（digest を足すのはよい）。
   - 一覧には `mcr.microsoft.com/devcontainers/base` のイメージを 1 つ以上含める。Feature を入れる先のほとんどがこのイメージから派生していること、非 root の `vscode` ユーザーで `_REMOTE_USER` の経路を試せることの 2 つが理由である。
-  - 各アーキテクチャは、そのアーキテクチャのネイティブ ランナーでテストする。
-- 初期値は、`init-repository` の雛形 `plugins/dev-container-feature-development/skills/init-repository/assets/workflows/test-feature.yaml` の `baseImage` と `RUNNERS` にだけ書く。選び方（Ubuntu の最新と 1 つ前の LTS、Debian の stable と oldstable、各 Ubuntu LTS の `devcontainers/base` の variant を持つ最新メジャー バージョン、amd64 と arm64）は `supported-platforms.md` の「Initial values」に書く。これは規則ではなく、妥当な選択の 1 つである。
+  - 各アーキテクチャは、そのアーキテクチャのネイティブ ランナーでテストする。GitHub ホステッドかセルフホステッドかは、リポジトリが決める。
+- 初期値は、`init-repository` の雛形 `plugins/dev-container-feature-development/skills/init-repository/assets/workflows/test-feature.yaml` の `baseImage` と `RUNNERS` にだけ書く。選び方は `supported-platforms.md` の「Initial values」にだけ書き、ここや README には写さない。これは規則ではなく、妥当な選択の 1 つである。
   - 「最新と 1 つ前」は、標準サポート中の LTS を約 1 年のあいだ対象外にする割り切りを含む。残したいリポジトリは、自分の一覧に足す。
   - `devcontainers/base` の Ubuntu 版と Debian 版は別々のイメージ定義からビルドされ、バージョン番号も別々に付く。メジャー バージョンは片方の系列にしか当てはまらない（例：`3` は Ubuntu 版のメジャー バージョンで、Debian の variant はない）。
   - プラグイン内の例に書くイメージ名、リリース番号、アーキテクチャは、雛形の初期値から選ぶ。CI ランナー名は雛形の `RUNNERS` 以外に書かない。
-  - 例と雛形が一致しているかは、CI では検査しない。例の値は説明のためのもので、食い違っても利用者のリポジトリは壊れない（例をまねたシナリオは、そのリポジトリの一覧を見る `feature-reviewer` と CI が止める）。食い違いが生まれるのは雛形の初期値を変えたときだけなので、そのときに `/update-initial-platforms` スキルの手順で合わせる。
+  - 例と雛形が一致しているかは、CI では検査しない。例の値は説明のためのもので、食い違っても利用者のリポジトリは壊れない（例をまねたシナリオは、そのリポジトリの一覧を見る `feature-reviewer` が指摘する。CI は、シナリオのイメージが一覧にあるかを検査しない）。食い違いが生まれるのは雛形の初期値を変えたときだけなので、そのときに `/update-initial-platforms` スキルの手順で合わせる。
   - 上流の新しいリリース（Ubuntu LTS、Debian stable、`devcontainers/base` の新しいイメージやメジャー バージョン、GitHub ホステッド ランナーの新しい Ubuntu 版）は自動では検出しない。気づいたら `/update-initial-platforms` スキルで初期値と例を更新する。既存のリポジトリが新しいリリースにどう追従するか（Renovate の custom manager など）は、各リポジトリが決める。
 - 目的が一部のディストリビューションでしか意味を持たない Feature（Ubuntu にしかパッケージを配らない Launchpad の PPA を足すものなど）は、他のディストリビューションで働かなくてよい。既定のオプションでは何もせず、対象外のディストリビューションでオプションを有効にしたら失敗させる。ベース イメージは `devcontainer.json` で決まり、誰がビルドしても同じ結果になるので、止めてよい。一覧は分けない。
 
@@ -54,7 +54,7 @@ Feature 実行環境となる Dev Container の OS とアーキテクチャに�
 - CI ワークフローには、このプラグインが管轄するジョブ（`validate`、`shellcheck`、`test-<id>`、`test-global`）を集約するジョブを 1 つ置く。Feature を足すたびにチェックの名前が増えるので、1 つのチェックで全体の成否が分かるようにするためである。
 - 集約ジョブの名前は固定しない。雛形の `ci-passed` は初期値であり、スキルとエージェントは名前を前提にしない。集約ジョブは、ジョブ ID の直上にあるコメント行 `# dev-container-feature-development: aggregate job` で見つける。`needs` の中身では見つけない。Feature がまだ無いリポジトリでは、`needs` にテスト ジョブが無いためである。
 - 2 つの行は `init-repository` だけが書く。雛形では、それぞれの上に「この行を編集、移動、削除しない」というコメントを置く。他のスキルとエージェントは、この行を足しも変えもしない。
-- スキルとエージェントが編集し、確かめ、読むワークフローは、CI ワークフローと、そのテスト ジョブが呼ぶ再利用可能ワークフロー（通常は `test-feature.yaml`）だけである。行を持たないワークフローは、Feature をテストしているものでも、編集せず、確かめず、ベース イメージの一覧や CI の結果の読み取りにも使わない。一覧を読む先は、テスト ジョブが呼ぶ再利用可能ワークフロー、テスト ジョブがまだ無ければ `.github/workflows/test-feature.yaml`、CI ワークフローもそのファイルも無ければ雛形 `test-feature.yaml` の初期値の順とする。初期値を使うときは、リポジトリの一覧ではないことを利用者に伝える。CI ワークフローが無くても、`run-feature-tests` はこの初期値でローカルの実行を続ける。CI でサポートを保証できないことと、手元で動くかを確かめられることは別だからである。
+- スキルとエージェントが編集し、確かめ、読むワークフローは、CI ワークフローと、そのテスト ジョブが呼ぶ再利用可能ワークフロー（通常は `test-feature.yaml`）だけである。行を持たないワークフローは、Feature をテストしているものでも、編集せず、確かめず、ベース イメージの一覧や CI の結果の読み取りにも使わない。一覧を読む先の順序と条件は、`supported-platforms.md` の「Where a repository's platforms are defined」にだけ書き、スキルとエージェントはそこを参照する。要点は、CI ワークフローにテスト ジョブがあればそれが呼ぶワークフロー、テスト ジョブが無く `.github/workflows/test-feature.yaml` があればそのファイル、それ以外（CI ワークフローが無いときを含む）は雛形の初期値で、初期値を使うときはリポジトリの一覧ではないことを利用者に伝える。CI ワークフローが無くても、`run-feature-tests` はこの初期値でローカルの実行を続ける。CI でサポートを保証できないことと、手元で動くかを確かめられることは別だからである。
 - 行が見つからないときは、黙って飛ばさない。スキル（`feature-testing`、`new-feature`）は利用者に伝えて `init-repository` を勧める。利用者が断ったら、Feature のファイル（`src/<id>/`、`test/<id>/`）だけを扱い、その Feature が CI でテストされないことを伝える。エージェント（`feature-reviewer`）は、確かめられなかったことを High として報告する。
 - 2 つの行の文言は、雛形、`init-repository`、`feature-testing`、`new-feature`、`feature-reviewer` で一致させる。変えるときは、すべてを同時に変える。
 - CI ワークフローの外にある集約ジョブは、リポジトリのものである。改名も統合もせず、行も足さない。新しく作る集約ジョブのジョブ ID は、他のワークフローのジョブと重ならないようにする。同じ名前のチェックが複数あると、必須チェックの結果が曖昧になるためである。
