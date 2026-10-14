@@ -17,11 +17,12 @@ permissions:
   contents: read
 
 jobs:
-  # Checks the inputs and pairs each architecture with a native runner of that architecture.
+  # Checks the inputs and the test files, and lists the architectures with a native runner for each.
   targets:
     runs-on: ubuntu-latest
     outputs:
-      targets: ${{ steps.targets.outputs.targets }}
+      architectures: ${{ steps.targets.outputs.architectures }}
+      runners: ${{ steps.targets.outputs.runners }}
     steps:
       - uses: actions/checkout@__CHECKOUT_REF__
 
@@ -41,18 +42,40 @@ jobs:
             }
         run: |
           set -euo pipefail
+          # The ID is checked before it is used in a path, so that a value such as op/../locale cannot
+          # name a directory outside src/ and test/.
           if [ "${FEATURE}" = _global ]; then
-            if [ ! -f test/_global/scenarios.json ]; then
-              echo '::error::There are no global scenarios to test: test/_global/scenarios.json is missing.'
+            test_dir=test/_global
+          elif [[ "${FEATURE}" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+            if [ ! -f "src/${FEATURE}/devcontainer-feature.json" ]; then
+              echo "::error::'${FEATURE}' is not a Feature of this repository: src/${FEATURE}/devcontainer-feature.json is missing."
               exit 1
             fi
-          elif [ ! -f "src/${FEATURE}/devcontainer-feature.json" ]; then
-            echo "::error::'${FEATURE}' is not a Feature of this repository: src/${FEATURE}/devcontainer-feature.json is missing."
+            test_dir="test/${FEATURE}"
+            # The CLI fails the auto-generated tests without test.sh too, but only after building an
+            # image on every runner.
+            if [ ! -f "${test_dir}/test.sh" ]; then
+              echo "::error::'${FEATURE}' has no test with the default options: ${test_dir}/test.sh is missing."
+              exit 1
+            fi
+          else
+            echo "::error::'${FEATURE}' is neither _global nor a Feature ID, which consists of lowercase letters, digits, and hyphens, and starts with a letter or a digit."
+            exit 1
+          fi
+          # The CLI only warns about a missing scenarios.json, and passes when no scenario runs. Every
+          # Feature has scenarios, so a missing or empty file means that its tests are lost.
+          if [ ! -f "${test_dir}/scenarios.json" ]; then
+            echo "::error::'${FEATURE}' has no scenarios to test: ${test_dir}/scenarios.json is missing."
+            exit 1
+          fi
+          if ! jq -e 'type == "object" and length > 0' "${test_dir}/scenarios.json" >/dev/null; then
+            echo "::error::'${FEATURE}' has no scenarios to test: ${test_dir}/scenarios.json must be a JSON object with at least one scenario."
             exit 1
           fi
           # Slurped, so that several JSON values in a row are rejected instead of being checked one by
-          # one.
-          if ! jq -e -s 'length == 1 and (.[0] | type == "array" and length > 0 and all(type == "string"))' <<< "${ARCHITECTURES}" >/dev/null 2>&1; then
+          # one. The error output of jq is kept, so that a jq error is not reported only as a wrong
+          # input.
+          if ! jq -e -s 'length == 1 and (.[0] | type == "array" and length > 0 and all(type == "string"))' <<< "${ARCHITECTURES}" >/dev/null; then
             echo "::error::The architectures of '${FEATURE}' must be a non-empty JSON array of strings, not '${ARCHITECTURES}'."
             exit 1
           fi
@@ -60,24 +83,30 @@ jobs:
             echo "::error::The architectures of '${FEATURE}' list an architecture more than once: ${ARCHITECTURES}"
             exit 1
           fi
-          unknown="$(jq -r --argjson runners "${RUNNERS}" '.[] | select(. as $arch | $runners | has($arch) | not)' <<< "${ARCHITECTURES}")"
-          if [ -n "${unknown}" ]; then
-            echo "::error::The architectures of '${FEATURE}' include ones this workflow does not test: $(printf '%s' "${unknown}" | paste -sd ' ' -). Supported: $(jq -r 'keys_unsorted | join(" ")' <<< "${RUNNERS}")."
+          # Decided by a boolean from jq rather than by whether a list of names is empty, since an
+          # empty string in the input would make that list empty too.
+          if ! jq -e --argjson runners "${RUNNERS}" 'all(.[]; . as $arch | $runners | has($arch))' <<< "${ARCHITECTURES}" >/dev/null; then
+            unknown="$(jq -c --argjson runners "${RUNNERS}" 'map(select(. as $arch | $runners | has($arch) | not))' <<< "${ARCHITECTURES}")"
+            echo "::error::The architectures of '${FEATURE}' include ones this workflow does not test: ${unknown}. Supported: $(jq -c 'keys_unsorted' <<< "${RUNNERS}")."
             exit 1
           fi
-          targets="$(jq -c --argjson runners "${RUNNERS}" 'map({arch: ., runner: $runners[.]})' <<< "${ARCHITECTURES}")"
-          echo "targets=${targets}" >> "${GITHUB_OUTPUT}"
-          echo "Targets: ${targets}"
+          architectures="$(jq -c '.' <<< "${ARCHITECTURES}")"
+          runners="$(jq -c '.' <<< "${RUNNERS}")"
+          echo "architectures=${architectures}" >> "${GITHUB_OUTPUT}"
+          echo "runners=${runners}" >> "${GITHUB_OUTPUT}"
+          echo "Architectures: ${architectures}"
 
+  # The jobs below have no name, so that GitHub names each by its job ID followed by the matrix
+  # values, such as "autogenerated (arm64, debian:13)". A name with matrix expressions would show the
+  # expressions unexpanded while the job is skipped.
   autogenerated:
-    name: "autogenerated (${{ matrix.target.arch }}, ${{ matrix.baseImage }})"
     needs: targets
     if: inputs.feature != '_global'
-    runs-on: ${{ matrix.target.runner }}
+    runs-on: ${{ fromJSON(needs.targets.outputs.runners)[matrix.arch] }}
     strategy:
       fail-fast: false
       matrix:
-        target: ${{ fromJSON(needs.targets.outputs.targets) }}
+        arch: ${{ fromJSON(needs.targets.outputs.architectures) }}
         # Pinned to explicit releases rather than floating tags, so that the releases tested are the
         # ones listed here. Under a floating tag, an image moving to a new release would drop the old
         # release from the tests without notice, and could fail every pull request at once. Bumping
@@ -95,46 +124,44 @@ jobs:
       - name: "Install latest devcontainer CLI"
         run: npm install -g @devcontainers/cli
 
-      - name: "Testing '${{ inputs.feature }}' on ${{ matrix.target.arch }} against '${{ matrix.baseImage }}'"
+      - name: "Testing '${{ inputs.feature }}' on ${{ matrix.arch }} against '${{ matrix.baseImage }}'"
         env:
           FEATURE: ${{ inputs.feature }}
           BASE_IMAGE: ${{ matrix.baseImage }}
         run: devcontainer features test --skip-scenarios -f "${FEATURE}" -i "${BASE_IMAGE}" .
 
   scenarios:
-    name: "scenarios (${{ matrix.target.arch }})"
     needs: targets
     if: inputs.feature != '_global'
-    runs-on: ${{ matrix.target.runner }}
+    runs-on: ${{ fromJSON(needs.targets.outputs.runners)[matrix.arch] }}
     strategy:
       fail-fast: false
       matrix:
-        target: ${{ fromJSON(needs.targets.outputs.targets) }}
+        arch: ${{ fromJSON(needs.targets.outputs.architectures) }}
     steps:
       - uses: actions/checkout@__CHECKOUT_REF__
 
       - name: "Install latest devcontainer CLI"
         run: npm install -g @devcontainers/cli
 
-      - name: "Testing '${{ inputs.feature }}' scenarios on ${{ matrix.target.arch }}"
+      - name: "Testing '${{ inputs.feature }}' scenarios on ${{ matrix.arch }}"
         env:
           FEATURE: ${{ inputs.feature }}
         run: devcontainer features test -f "${FEATURE}" --skip-autogenerated --skip-duplicated .
 
   global:
-    name: "global (${{ matrix.target.arch }})"
     needs: targets
     if: inputs.feature == '_global'
-    runs-on: ${{ matrix.target.runner }}
+    runs-on: ${{ fromJSON(needs.targets.outputs.runners)[matrix.arch] }}
     strategy:
       fail-fast: false
       matrix:
-        target: ${{ fromJSON(needs.targets.outputs.targets) }}
+        arch: ${{ fromJSON(needs.targets.outputs.architectures) }}
     steps:
       - uses: actions/checkout@__CHECKOUT_REF__
 
       - name: "Install latest devcontainer CLI"
         run: npm install -g @devcontainers/cli
 
-      - name: "Testing global scenarios on ${{ matrix.target.arch }}"
+      - name: "Testing global scenarios on ${{ matrix.arch }}"
         run: devcontainer features test --global-scenarios-only .

@@ -18,7 +18,7 @@ Tests live in `test/<id>/`, mirroring `src/<id>/`. They run with `devcontainer f
 | `test/_global/scenarios.json` | Global scenario | Scenarios spanning several Features. |
 | `test/<id>/negative-tests.md` | Manual | Cases the CLI cannot express, run by `docker run`: failures, and second runs that the duplicate test cannot exercise. See below. |
 
-`test.sh` is mandatory for every Feature: the auto-generated run fails without it. So is a job in the CI workflow, which names the architectures to test on (see "Test jobs" below); the global scenarios need one too.
+`test.sh` and a `scenarios.json` with at least one scenario are mandatory for every Feature, and `test/_global/scenarios.json`, when it exists, needs at least one scenario too. The test workflow fails without them: the CLI itself fails the auto-generated run without `test.sh`, but passes when no scenario runs. Every Feature also needs a job in the CI workflow, which names the architectures to test on (see "Test jobs" below); the global scenarios need one too.
 
 Make every test script executable, following the rule in the `new-feature` skill: `chmod +x`, then record the mode with `git add --chmod=+x <files>`, since Git does not pick up the bit on Windows or with `core.fileMode=false`. Tell the user that this stages the files.
 
