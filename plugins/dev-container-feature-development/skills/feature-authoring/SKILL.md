@@ -79,7 +79,7 @@ Comments explain *why*, not *what*. Write them in American English.
 
 ## Writing devcontainer-feature.json
 
-- Required: `id` (lowercase, equals the directory name), `version` (SemVer), `name`.
+- Required: `id` (lowercase letters and digits, in groups separated by a single `.`, `_`, or `-`; equals the directory name), `version` (SemVer), `name`.
 - Always set `description`, `documentationURL` (`https://github.com/<owner>/<repo>/tree/main/src/<id>`), and `licenseURL`.
 - Give every option a `type` (`string` or `boolean`), a `default`, and a `description`. Use `enum` for closed sets and `proposals` for suggestions. Neither `type` nor `enum` is enforced at build time, so `install.sh` validates the values.
 - Never accept secrets as options: option values are committed in the user's `devcontainer.json`, appear in build logs, and are written to `devcontainer-features.env`, which can persist in an image layer depending on how the image is built. Document how to pass secrets at runtime (`remoteEnv`, Codespaces secrets) in `NOTES.md` instead.

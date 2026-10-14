@@ -48,7 +48,7 @@ Create, following the `feature-authoring` skill:
 Then the tests, following the `feature-testing` skill:
 
 - `test/<id>/test.sh` for the default options.
-- `test/<id>/scenarios.json` with a scenario per behavior-changing option value, a `non_root_user` scenario when anything touches a user's environment, and, when the Feature installs dependencies, a bare-image scenario that exercises that installation. Spread scenarios across the supported releases.
+- `test/<id>/scenarios.json` with at least one scenario: a scenario per behavior-changing option value, a `non_root_user` scenario when anything touches a user's environment, and, when the Feature installs dependencies, a bare-image scenario that exercises that installation. When none of these applies, write the `non_root_user` scenario anyway, as "What to cover" in the `feature-testing` skill describes. Spread scenarios across the supported releases.
 - `test/<id>/duplicate.sh` when options change what gets installed or configured, unless the duplicate test cannot exercise the Feature (see "What to cover" in the `feature-testing` skill).
 - `test/<id>/negative-tests.md` for every failure path in `install.sh` that tests cannot express.
 
