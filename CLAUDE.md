@@ -4,8 +4,6 @@
 
 Claude Code のプラグインを配布するマーケットプレイス。
 
-- `.claude-plugin/marketplace.json`: マーケットプレイスの定義。プラグインを追加したら、ここに登録する。
-- `plugins/<name>/`: 各プラグイン。マニフェストは `plugins/<name>/.claude-plugin/plugin.json`。
 - プラグイン固有の開発方針は `.claude/rules/<name>.md` に `paths` 付きで書く。`plugins/<name>/` 以下は丸ごと配布されるため、そこに `CLAUDE.md` を置かない。
 
 ## 対象エージェント
@@ -23,6 +21,7 @@ Claude Code のプラグインを配布するマーケットプレイス。
 ## プラグインの開発
 
 - プラグイン全般の開発には `plugin-dev` プラグイン、プラグインに内蔵するスキルの開発には `skill-creator` プラグインを使う。作成後のレビューには `plugin-dev:plugin-validator` と `plugin-dev:skill-reviewer` を使う。
+- プラグインを追加したら、`.claude-plugin/marketplace.json` に登録する。
 - `plugin.json` には `version` を SemVer で書き、利用者に届けたい変更をしたら上げる。`marketplace.json` のエントリには `version` を書かない。
 - プラグイン実行環境の OS に依存するコードは避ける。
 - プラグインを構成するスクリプトは Bash 用のシェル スクリプトで書く。
