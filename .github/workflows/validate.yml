@@ -107,15 +107,13 @@ jobs:
           ' "${root}/.github/workflows/ci.yaml"
           docker run --rm -v "${root}:/repo" -w /repo "${ACTIONLINT_IMAGE}" -color
 
-  # A mistake in renovate.json goes unnoticed until Renovate stops after the merge, and the
-  # pre-commit hook can be bypassed, so it is validated here as well. The reusable workflow of the
+  # A mistake in renovate.json goes unnoticed until Renovate stops after the merge, so it is
+  # validated before the merge; there is no pre-commit hook for it. The reusable workflow of the
   # shared preset repository is referenced by @main, like the presets. gh actions-lock does not pin
-  # a job-level uses (checked with v0.2.0), so it is not in actions.lock.
+  # a job-level uses (checked with v0.2.0), so it is not in actions.lock. The Renovate version is
+  # the one written in the reusable workflow, which Renovate updates there.
   renovate-config:
     uses: aetos382/renovate-presets/.github/workflows/renovate-config.yml@main
-    with:
-      # Validate with the same version as the dev container and the pre-commit hook.
-      versions-file: .devcontainer/versions.sh
 
   # A mismatch between the workflows and actions.lock, or a lockfile that cannot be read, does not
   # show in the workflows themselves, and the pre-commit hook can be bypassed, so it is stopped here.
