@@ -47,7 +47,7 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 
    [GitHub-hosted runners のリファレンス](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)の、標準ランナーの表（パブリック リポジトリ用とプライベート リポジトリ用）を読む。雛形の `RUNNERS` の全アーキテクチャについて、両方の表にラベルがある Ubuntu 版のうち最新のものを選ぶ（例: `ubuntu-24.04` と `ubuntu-24.04-arm`）。プレビューやベータと書かれたラベルは数えない。
 
-   雛形の `RUNNERS` のどれかのキーについてラベルを選べなければ（GitHub がそのアーキテクチャの標準ランナーを外した、表の形式が変わって読めない、など）、中断して報告する。そのキーを外すかは利用者が決める。
+   雛形の `RUNNERS` のどれかのキーについてラベルを選べなければ（GitHub がそのアーキテクチャの標準ランナーを外した、表の形式が変わって読めない、など）、中断して報告する。そのキーを外すかは利用者が決め、外すと決めたら 7 節に進む。
 
    両方の表に Linux の標準ランナーがあるアーキテクチャを拾い、雛形の `RUNNERS` のキーと比べる。差があれば最後に報告する（書き換えない）。片方の表にしか無いアーキテクチャも、別に報告する。
 
@@ -114,13 +114,13 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 
 手順 1.4 や 6 節の報告を受けて、利用者が雛形の対象アーキテクチャを足すか外すと決めたときに行う。2 節のブランチ（まだ無ければ作る）で、次をまとめて直す。
 
-1. 雛形 `test-feature.yaml` の `RUNNERS` のキーとランナー。足すアーキテクチャのランナーは、手順 1.4 と同じ基準で選ぶ。
-2. `supported-platforms.md` の「Initial values」の Architectures の行と、「Architecture names」の表。足すアーキテクチャの `uname -m` の値は、そのアーキテクチャの Linux カーネルが報告する値を一次資料で確かめる。確かめられなければ、中断して報告する。
+1. 雛形 `test-feature.yaml` の `RUNNERS` のキー。ランナーは、変えた後の全キーについて、手順 1.4 の基準でラベルを選び直す。足すアーキテクチャのラベルが古い Ubuntu 版にしか無ければ、既存のキーのラベルもその版に揃う。
+2. `supported-platforms.md` の「Initial values」の Architectures と Runners の行と、「Architecture names」の表。表には足すアーキテクチャの行を足すだけで、外すアーキテクチャの行は消さない。以前の初期値からそのアーキテクチャを取り込んだリポジトリが、表に頼っているためである。足すアーキテクチャの `uname -m` の値は、そのアーキテクチャの Linux カーネルが報告する値を一次資料で確かめる。確かめられなければ、中断して報告する。
 3. `architectures: '[...]'` の形の例（`ci.yaml` 雛形のコメント、`feature-testing` のテスト ジョブの例）。
-4. 本文や例の、アーキテクチャの列挙。次で洗い出し、雛形のキーに合わせる。`install.sh` の例の `uname -m` の分岐も対象にする。
+4. 本文や例の、アーキテクチャの列挙。次で洗い出し、雛形のキーに合わせる。`install.sh` の例の `uname -m` の分岐も対象にする。「Architecture names」の表の行は、2 のとおり消さない。
 
    ```bash
-   git grep -n -E '\b(amd64|arm64|x86_64|aarch64)\b' -- plugins/dev-container-feature-development .claude/rules
+   git grep -n -i -E '\b(amd64|arm64|x86_64|aarch64)\b' -- plugins/dev-container-feature-development .claude/rules
    ```
 
-その後、手順 4.1 と 5 節を行い、6 節で報告する。
+その後、3 節、4 節、5 節を行い、6 節で報告する。2 節のブランチは作り直さない。3 節の「キーとその並びは変えない」は 7.1 で変えた後のキーについて読み、ランナーは 7.1 で選んだラベルにする。手順 1.4 で中断してここへ来たときも、手順 1.1〜1.3 の結果は 3 節で反映する。

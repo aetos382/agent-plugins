@@ -38,7 +38,7 @@ Make every test script executable, following the rule in the `new-feature` skill
 
 Scenarios pin their own `image`, so they run once per architecture rather than once per base image. Use only images of the `baseImage` matrix, the repository's list of supported base images, written as they are there (including any digest), both for `image` and for the `FROM` of a scenario's Dockerfile. It is in the reusable workflow called by the test jobs of the CI workflow (usually `test-feature.yaml`); "Where a repository's platforms are defined" in `${CLAUDE_PLUGIN_ROOT}/skills/feature-authoring/references/supported-platforms.md` says where to read it when the CI workflow has no test job or does not exist, and when to stop because it cannot be read from the workflow the test jobs call. Spread scenarios across its releases instead of putting all of them on one image. A scenario on any other image suggests support for a release that CI does not otherwise test, and it fails unrelated pull requests once that image stops being updated or is removed. Images in the examples of this skill are illustrations taken from the initial values of the `init-repository` template; take the ones to use from the repository's matrix.
 
-To add or remove a base image or an architecture of the repository, or to change a runner, follow "Changing a repository's lists" in `supported-platforms.md`: the scenarios, every Feature's `NOTES.md`, and the jobs' `architectures` change with the lists.
+To add or remove a base image or an architecture of the repository, or to change a runner, follow "Changing a repository's lists" in `supported-platforms.md`, which says what else changes with each.
 
 ## Test jobs
 

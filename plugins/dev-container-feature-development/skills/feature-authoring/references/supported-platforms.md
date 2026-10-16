@@ -54,16 +54,20 @@ The initial values are chosen as follows. This is one reasonable choice, not a r
 - **Ubuntu**: the latest LTS release and the one before it. This leaves an LTS release that still has standard support untested for about a year after the next one comes out. A repository that wants to keep it adds it to its own list.
 - **Debian**: the current stable and oldstable releases.
 - **`mcr.microsoft.com/devcontainers/base`**: the variant for each Ubuntu release above, each at the newest major version that has that variant. The Ubuntu and Debian variants are built from separate image definitions with their own version numbers, so a major version applies to one family only (for example, `3` is an Ubuntu major version and has no Debian variants). The variant for a new Ubuntu release appears weeks after the release; until it does, the list covers only the releases that have one.
-- **Architectures**: amd64 and arm64, the architectures for which GitHub offers hosted Linux runners.
+- **Architectures**: amd64 and arm64, chosen from the architectures for which GitHub offers hosted Linux runners.
 - **Runners**: GitHub-hosted runners of the newest Ubuntu LTS release that GitHub offers for every architecture. Arm64 runners have no `latest` label in any case.
 
 ## Architecture names
 
-The keys of `RUNNERS` are the architecture names that the `run-feature-tests` skill matches against `uname -m` of the Docker host, and that the `uname -m` branches of each Feature's `install.sh` correspond to (whatever names the upstream uses inside those branches). This table covers the keys of the initial values only:
+The keys of `RUNNERS` are the architecture names that the `run-feature-tests` skill matches against `uname -m` of the Docker host, and that the `uname -m` branches of each Feature's `install.sh` correspond to (whatever names the upstream uses inside those branches). This table covers at least the keys of the initial values. Rows are only ever added, never removed, since repositories that took an architecture from earlier initial values rely on its row:
 
 | Architecture | `uname -m` |
 |---|---|
 | amd64 | `x86_64` |
 | arm64 | `aarch64` |
 
-A repository whose `RUNNERS` has a key that is not in the table records its `uname -m` value as a comment line directly above `RUNNERS`, in the form `# uname -m of <key>: <value>`, since `RUNNERS` itself holds JSON. To map `uname -m` to a key, use the table, then those comment lines. When a key is in neither, ask the user its `uname -m` value once, and add the comment line with the answer. When the user does not know it, add no line and say that the key matches no host until its value is recorded.
+A repository whose `RUNNERS` has a key that is not in the table records its `uname -m` value as a comment line directly above `RUNNERS`, in the form `# uname -m of <key>: <value>`, since `RUNNERS` itself holds JSON. To map `uname -m` to a key, use the table, then those comment lines. A key that is in neither has no known value yet:
+
+- **Matching the Docker host** (`run-feature-tests`): ask the user the value, once per key, and add the comment line with the answer so that it is not asked again. When the user does not know it, add no line, and say that the key matches no host until its value is recorded.
+- **Writing the `uname -m` branches of `install.sh`**: ask the user in the same way. When the value stays unknown, write no branch for that architecture, and tell the user that the Feature fails on it until the value is recorded.
+- **Reviewing the branches** (`feature-reviewer`): do not guess the value. Report as High that the branches could not be checked for that key, and that its value has to be recorded as above.
