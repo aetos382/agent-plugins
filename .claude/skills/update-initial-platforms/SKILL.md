@@ -1,11 +1,11 @@
 ---
 name: update-initial-platforms
-description: dev-container-feature-development の初期値（init-repository が新しい Features リポジトリに書く test-feature.yaml の baseImage と RUNNERS）と、プラグイン内の例のイメージ名を、上流の最新に合わせて更新する。Ubuntu や Debian の新しいリリース、devcontainers/base の新しいイメージやメジャー バージョン、GitHub ホステッド ランナーの新しい Ubuntu 版が出たとき、またはユーザーが初期値の確認や更新を求めたときに使う。既存の Features リポジトリの一覧は変えない。
+description: dev-container-feature-development の初期値（init-repository が新しい Features リポジトリに書く test-feature.yaml の baseImage と RUNNERS）と、プラグイン内の例のイメージ名を、上流の最新に合わせて更新する。Ubuntu や Debian の新しいリリース、devcontainers/base の新しいイメージやメジャー バージョン、GitHub ホステッド ランナーの新しい Ubuntu 版や、新しいアーキテクチャのホステッド Linux ランナーが出たとき、またはユーザーが初期値の確認や更新を求めたときに使う。既存の Features リポジトリの一覧は変えない。
 ---
 
 # 初期値の更新
 
-dev-container-feature-development の初期値を上流の最新に合わせる。初期値は、ワークフロー雛形 `plugins/dev-container-feature-development/skills/init-repository/assets/workflows/test-feature.yaml` の `baseImage` と `RUNNERS` だけに書いてある。選び方は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` の「Initial values」節に従う。ランナーのラベルは Ubuntu LTS の版で固定しているので、このスキルで更新する。対象アーキテクチャ（`RUNNERS` のキー）は、GitHub がホステッド ランナーを提供するアーキテクチャから選んでいるので、このスキルで差を調べて報告する。ただし、足すか外すかは利用者が決め、このスキルは書き換えない。アーキテクチャを変えると、例の `architectures:` や本文の列挙（「amd64 と arm64」など）も直すことになるためである。
+dev-container-feature-development の初期値を上流の最新に合わせる。初期値は、ワークフロー雛形 `plugins/dev-container-feature-development/skills/init-repository/assets/workflows/test-feature.yaml` の `baseImage` と `RUNNERS` だけに書いてある。選び方は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` の「Initial values」節に従う。ランナーのラベルは Ubuntu LTS の版で固定しているので、このスキルで更新する。対象アーキテクチャ（`RUNNERS` のキー）は、GitHub がホステッド ランナーを提供するアーキテクチャから選んでいるので、このスキルで差を調べて報告する。足すか外すかは利用者が決め、決まるまでは書き換えない。アーキテクチャを変えると、例の `architectures:` や本文の列挙（「amd64 と arm64」など）も直すことになるためである。利用者が変えると決めたら、7 節の手順で直す。
 
 対象のディストリビューションは、各 Features リポジトリが自分のテスト ワークフローで決める。初期値を変えても既存のリポジトリには届かない。`init-repository` を再実行したときに、初期値との差が計画に情報として出るだけである。
 
@@ -47,7 +47,9 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 
    [GitHub-hosted runners のリファレンス](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)の、標準ランナーの表（パブリック リポジトリ用とプライベート リポジトリ用）を読む。雛形の `RUNNERS` の全アーキテクチャについて、両方の表にラベルがある Ubuntu 版のうち最新のものを選ぶ（例: `ubuntu-24.04` と `ubuntu-24.04-arm`）。プレビューやベータと書かれたラベルは数えない。
 
-   同じ表から、Linux の標準ランナーがあるアーキテクチャを拾い、雛形の `RUNNERS` のキーと比べる。差があれば最後に報告する（書き換えない）。
+   雛形の `RUNNERS` のどれかのキーについてラベルを選べなければ（GitHub がそのアーキテクチャの標準ランナーを外した、表の形式が変わって読めない、など）、中断して報告する。そのキーを外すかは利用者が決める。
+
+   両方の表に Linux の標準ランナーがあるアーキテクチャを拾い、雛形の `RUNNERS` のキーと比べる。差があれば最後に報告する（書き換えない）。片方の表にしか無いアーキテクチャも、別に報告する。
 
 5. 結果を雛形の `baseImage` と `RUNNERS` と比べる。どちらも一致していれば、更新は不要と報告する。手順 1.3 で含められなかった Ubuntu 版と、手順 1.4 のアーキテクチャの差も、このとき報告する。確認した日付を残すかを利用者に尋ね、残すなら、2 節のブランチを作って `supported-platforms.md` の日付だけを更新し、5 節の手順 5.1 だけを行って 6 節へ進む。残さないなら、ここで終わる。
 
@@ -91,7 +93,7 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 
 3. 手順 4.2 は書かれた名前しか見ず、列挙の漏れは見つけない。`plugins/dev-container-feature-development/skills/feature-authoring/examples/NOTES.md` の Limitations 節は雛形と突き合わせ、追加された版が漏れていれば直す。
 4. 手順 4.2 はコードネームも見ない。外れたリリースのコードネーム（例: `Bookworm`）で `plugins/dev-container-feature-development` と `.claude/rules` を検索し、見つかれば直す。
-5. `architectures: '[...]'` の形の例（`ci.yaml` 雛形のコメント、`feature-testing` のテスト ジョブの例）は、アーキテクチャを変えないこのスキルでは直す必要がない。
+5. `architectures: '[...]'` の形の例（`ci.yaml` 雛形のコメント、`feature-testing` のテスト ジョブの例）は、アーキテクチャを変えないときは直す必要がない。変えるときは 7 節で直す。
 
 ## 5. 検証とバージョン
 
@@ -105,5 +107,20 @@ dev-container-feature-development の初期値を上流の最新に合わせる�
 - 追加・削除したイメージと、変更したランナー
 - 4 節で行った置き換えのうち、機械的でないもの
 - まだ devcontainers/base に variant がなく、含められなかった Ubuntu 版（公開後にこのスキルを再実行すれば追加される）
-- 手順 1.4 で見つけた、GitHub の Linux 標準ランナーのアーキテクチャと雛形の `RUNNERS` のキーとの差（足すかどうかは利用者が決める）
+- 手順 1.4 で見つけた、GitHub の Linux 標準ランナーのアーキテクチャと雛形の `RUNNERS` のキーとの差、および片方の表にしか無いアーキテクチャ（足すかどうかは利用者が決め、決めたら 7 節で直す）
 - 次に行うこと: コミットとプル リクエストの作成（指示があれば行う）。既存の Features リポジトリの一覧は変わらない。各リポジトリで一覧を変えるかどうかはそのリポジトリが決める。`/dev-container-feature-development:init-repository` を再実行すれば、初期値との差が計画に出る。
+
+## 7. 対象アーキテクチャを変えると決めたとき
+
+手順 1.4 や 6 節の報告を受けて、利用者が雛形の対象アーキテクチャを足すか外すと決めたときに行う。2 節のブランチ（まだ無ければ作る）で、次をまとめて直す。
+
+1. 雛形 `test-feature.yaml` の `RUNNERS` のキーとランナー。足すアーキテクチャのランナーは、手順 1.4 と同じ基準で選ぶ。
+2. `supported-platforms.md` の「Initial values」の Architectures の行と、「Architecture names」の表。足すアーキテクチャの `uname -m` の値は、そのアーキテクチャの Linux カーネルが報告する値を一次資料で確かめる。確かめられなければ、中断して報告する。
+3. `architectures: '[...]'` の形の例（`ci.yaml` 雛形のコメント、`feature-testing` のテスト ジョブの例）。
+4. 本文や例の、アーキテクチャの列挙。次で洗い出し、雛形のキーに合わせる。`install.sh` の例の `uname -m` の分岐も対象にする。
+
+   ```bash
+   git grep -n -E '\b(amd64|arm64|x86_64|aarch64)\b' -- plugins/dev-container-feature-development .claude/rules
+   ```
+
+その後、手順 4.1 と 5 節を行い、6 節で報告する。

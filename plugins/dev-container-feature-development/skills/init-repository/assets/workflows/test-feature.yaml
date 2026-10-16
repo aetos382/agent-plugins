@@ -35,12 +35,13 @@ jobs:
           FEATURE: ${{ inputs.feature }}
           ARCHITECTURES: ${{ inputs.architectures }}
           # The architectures this repository supports, each mapped to a native runner of
-          # that architecture, pinned to a release like the base images below. The test jobs of the
-          # CI workflow name only these keys in architectures. This object and the baseImage matrix
-          # belong to the repository: the dev-container-feature-development plugin reads them as
-          # the supported platforms, and its init-repository skill does not change them once
-          # written. Change them only together with what depends on them, as the feature-testing
-          # skill of that plugin describes.
+          # that architecture (a GitHub-hosted one pinned to a release like the base images
+          # below). The test jobs of the CI workflow name only these keys in architectures.
+          # This object and the baseImage matrix belong to the repository: the
+          # dev-container-feature-development plugin reads them as the supported platforms, and
+          # its init-repository skill does not change them once written. Change them only
+          # together with what depends on them, as the feature-testing skill of that plugin
+          # describes.
           RUNNERS: |
             {
               "amd64": "ubuntu-24.04",

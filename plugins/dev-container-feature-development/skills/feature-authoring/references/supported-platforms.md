@@ -13,7 +13,7 @@ The CI workflow is the workflow under `.github/workflows/` with the line `# dev-
 
 1. **The CI workflow has test jobs.** Read the workflow that its test jobs (`test-<id>`, `test-global`) call in `uses`. Stop and tell the user, without falling back to the initial values, when the lists cannot be read from it: the file is missing, the test jobs call different workflows, `baseImage` is not a plain list of strings (for example built with `include` or an expression), or `RUNNERS` is missing or is not a JSON object whose values are strings.
 2. **The CI workflow has no test job yet**, as right after `init-repository` created it, **and `.github/workflows/test-feature.yaml` exists.** Read that file, which `init-repository` writes together with the CI workflow.
-3. **Otherwise**: the repository has no CI workflow, or has one with no test job and no `.github/workflows/test-feature.yaml`. A `test-feature.yaml` without a CI workflow is not read, since no workflow of this plugin calls it. There is no list, nothing is tested by CI, and so nothing is supported. Where a list is still needed, such as to choose the image of a scenario or to run the tests locally, use the `baseImage` matrix and `RUNNERS` of the `init-repository` template (see "Initial values"), and tell the user that these are the initial values that `init-repository` would write, not the repository's lists.
+3. **Otherwise**: the repository has no CI workflow, or has one with no test job and no `.github/workflows/test-feature.yaml`. A `.github/workflows/test-feature.yaml` without a CI workflow is not read, since no workflow of this plugin calls it. There is no list, nothing is tested by CI, and so nothing is supported. Where a list is still needed, such as to choose the image of a scenario or to run the tests locally, use the `baseImage` matrix and `RUNNERS` of the `init-repository` template (see "Initial values"), and tell the user that these are the initial values that `init-repository` would write, not the repository's lists.
 
 Skills and agents read the lists from the workflow each time, and never write the releases, images, or architectures of a repository into their own instructions. Each Feature's `NOTES.md` does name them, as a description of what CI tests, so it is updated whenever the lists change (see "Changing a repository's lists").
 
@@ -45,7 +45,7 @@ Then have the `feature-reviewer` agent review every Feature.
 
 ## Initial values
 
-The `test-feature.yaml` template of the `init-repository` skill (`skills/init-repository/assets/workflows/test-feature.yaml` in this plugin) defines the initial values in its `baseImage` matrix and `RUNNERS`. The examples of this plugin's skills copy images and releases from them; in a repository, use the images of its own lists instead. `init-repository` writes the initial values into a repository that has no `test-feature.yaml` yet. From then on, they are the repository's own: `init-repository` does not change them in an existing repository, and only reports how they differ from the current initial values.
+The template of the reusable workflow in the `init-repository` skill (`skills/init-repository/assets/workflows/test-feature.yaml` in this plugin) defines the initial values in its `baseImage` matrix and `RUNNERS`. The examples of this plugin's skills copy images and releases from them; in a repository, use the images of its own lists instead. `init-repository` writes the initial values into a repository that has no `test-feature.yaml` yet. From then on, they are the repository's own: `init-repository` does not change them in an existing repository, and only reports how they differ from the current initial values.
 
 Last checked against upstream release information: 2026-09-18.
 
@@ -66,4 +66,4 @@ The keys of `RUNNERS` are the architecture names that the `run-feature-tests` sk
 | amd64 | `x86_64` |
 | arm64 | `aarch64` |
 
-A repository whose `RUNNERS` has a key that is not in the table records its `uname -m` value as a comment line directly above `RUNNERS`, in the form `# uname -m of <key>: <value>`, since `RUNNERS` itself holds JSON. To map `uname -m` to a key, use the table, then those comment lines. When a key is in neither, ask the user once, and add the comment line with the answer.
+A repository whose `RUNNERS` has a key that is not in the table records its `uname -m` value as a comment line directly above `RUNNERS`, in the form `# uname -m of <key>: <value>`, since `RUNNERS` itself holds JSON. To map `uname -m` to a key, use the table, then those comment lines. When a key is in neither, ask the user its `uname -m` value once, and add the comment line with the answer. When the user does not know it, add no line and say that the key matches no host until its value is recorded.
