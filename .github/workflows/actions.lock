@@ -3,9 +3,6 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
-    '.github/workflows/claude-code-review.yml':
-        - 'actions/checkout@v7.0.1'
-        - 'anthropics/claude-code-action@v1.0.251'
     '.github/workflows/claude.yml':
         - 'actions/checkout@v7.0.1'
         - 'anthropics/claude-code-action@v1.0.251'
