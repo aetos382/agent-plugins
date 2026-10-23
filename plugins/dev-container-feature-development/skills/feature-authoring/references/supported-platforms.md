@@ -59,11 +59,11 @@ The initial values are chosen as follows. This is one reasonable choice, not a r
 
 ## Architecture names
 
-The keys of `RUNNERS` are the architecture names that the `run-feature-tests` skill matches against `uname -m` of the Docker host, and that the `uname -m` branches of each Feature's `install.sh` correspond to (whatever names the upstream uses inside those branches). The architectures within this plugin's scope are:
+The keys of `RUNNERS` are the architecture names that the `run-feature-tests` skill matches against `uname -m` of the Docker host, and that the `uname -m` branches of each Feature's `install.sh` correspond to (whatever names the upstream uses inside those branches). The `uname -m` value of each architecture within the plugin's scope:
 
 | Architecture | `uname -m` |
 |---|---|
 | amd64 | `x86_64` |
 | arm64 | `aarch64` |
 
-Any other key of `RUNNERS` is outside the scope (see "Scope" above).
+Other architectures are outside the scope (see "Scope" above).
