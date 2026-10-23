@@ -55,7 +55,7 @@ The initial values are chosen as follows. This is one reasonable choice, not a r
 - **Ubuntu**: the latest LTS release and the one before it. This leaves an LTS release that still has standard support untested for about a year after the next one comes out. A repository that wants to keep it adds it to its own list.
 - **Debian**: the current stable and oldstable releases.
 - **`mcr.microsoft.com/devcontainers/base`**: the variant for each Ubuntu release above, each at the newest major version that has that variant. The Ubuntu and Debian variants are built from separate image definitions with their own version numbers, so a major version applies to one family only (for example, `3` is an Ubuntu major version and has no Debian variants). The variant for a new Ubuntu release appears weeks after the release; until it does, the list covers only the releases that have one.
-- **Architectures**: the architectures for which GitHub offers standard hosted Linux runners to both public and private repositories.
+- **Architectures**: chosen from the architectures for which GitHub offers standard hosted Linux runners to both public and private repositories.
 - **Runners**: GitHub-hosted runners of the newest Ubuntu LTS release that GitHub offers for every architecture. Arm64 runners have no `latest` label in any case.
 
 ## Architecture names
