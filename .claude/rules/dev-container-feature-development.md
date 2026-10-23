@@ -29,8 +29,6 @@ Feature 実行環境となる Dev Container の OS とアーキテクチャに�
   - 一覧には `mcr.microsoft.com/devcontainers/base` のイメージを 1 つ以上含める。Feature を入れる先のほとんどがこのイメージから派生していること、非 root の `vscode` ユーザーで `_REMOTE_USER` の経路を試せることの 2 つが理由である。
   - 各アーキテクチャは、そのアーキテクチャのネイティブ ランナーでテストする。GitHub ホステッドかセルフホステッドかは、リポジトリが決める。
 - 初期値は、`init-repository` の雛形 `plugins/dev-container-feature-development/skills/init-repository/assets/workflows/test-feature.yaml` の `baseImage` と `RUNNERS` にだけ書く。選び方は `supported-platforms.md` の「Initial values」にだけ書き、ここや README には写さない。これは規則ではなく、妥当な選択の 1 つである。
-  - 「最新と 1 つ前」は、標準サポート中の LTS を約 1 年のあいだ対象外にする割り切りを含む。残したいリポジトリは、自分の一覧に足す。
-  - `devcontainers/base` の Ubuntu 版と Debian 版は別々のイメージ定義からビルドされ、バージョン番号も別々に付く。メジャー バージョンは片方の系列にしか当てはまらない（例：`3` は Ubuntu 版のメジャー バージョンで、Debian の variant はない）。
   - プラグイン内の例に書くイメージ名、リリース番号、アーキテクチャは、雛形の初期値から選ぶ。CI ランナー名は雛形の `RUNNERS` 以外に書かない。
   - 例と雛形が一致しているかは、CI では検査しない。例の値は説明のためのもので、食い違っても利用者のリポジトリは壊れない（例をまねたシナリオは、そのリポジトリの一覧を見る `feature-reviewer` が指摘する。CI は、シナリオのイメージが一覧にあるかを検査しない）。食い違いが生まれるのは雛形の初期値を変えたときだけなので、そのときに `/update-initial-platforms` スキルの手順で合わせる。
   - 上流の新しいリリース（Ubuntu LTS、Debian stable、`devcontainers/base` の新しいイメージやメジャー バージョン、GitHub ホステッド ランナーの新しい Ubuntu 版や新しいアーキテクチャ）は自動では検出しない。気づいたら `/update-initial-platforms` スキルで初期値と例を更新する。ただしアーキテクチャは、スキルが差を報告し、足すか外すかは利用者が決める。決めたら、同じスキルの手順で直す。既存のリポジトリが新しいリリースにどう追従するか（Renovate の custom manager など）は、各リポジトリが決める。
