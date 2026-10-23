@@ -23,7 +23,8 @@ Feature 実行環境となる Dev Container の OS とアーキテクチャに�
   - `init-repository` は、既存のリポジトリの `baseImage` と `RUNNERS` を雛形に合わせて書き換えない。雛形の初期値との差を、計画に情報として挙げるだけである。一覧を変えるときに一緒に直すもの（シナリオのイメージ、各 Feature の `NOTES.md`、ジョブの `architectures`）は、`supported-platforms.md` の「Changing a repository's lists」に書き、`feature-reviewer` が一覧の変更時に全 Feature を照らす。
 - プラグインに残すのは原則と初期値である。原則は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` に書く。
   - サポートと呼べるのは、CI でテストしているものだけである。
-  - テストしていないディストリビューションは、`NOTES.md` にそう書く。その他のディストリビューションは、パッケージ マネージャーの分岐を足す程度で済む場合のみサポートする。
+  - テストしていないディストリビューションは、`NOTES.md` にそう書く。
+  - 一覧に無いディストリビューションはベストエフォートとする。`install.sh` にパッケージ マネージャーの分岐を足す程度で動くなら、動くように書いてよい。CI ではテストせず、シナリオもジョブも足さず、サポートとは呼ばない。
   - ベース イメージのタグは、リリースで固定する（digest を足すのはよい）。`RUNNERS` の GitHub ホステッド ランナーのラベルも、リリースで固定する。セルフホステッド ランナーをどう固定するかは、リポジトリに任せる。Feature を実行しないジョブ（`targets` や集約ジョブ）は `ubuntu-latest` でよい。
   - 一覧には `mcr.microsoft.com/devcontainers/base` のイメージを 1 つ以上含める。Feature を入れる先のほとんどがこのイメージから派生していること、非 root の `vscode` ユーザーで `_REMOTE_USER` の経路を試せることの 2 つが理由である。
   - 各アーキテクチャは、そのアーキテクチャのネイティブ ランナーでテストする。GitHub ホステッドかセルフホステッドかは、リポジトリが決める。

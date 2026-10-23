@@ -262,7 +262,7 @@ if ! (cd "${TMP_DIR}" && sha256sum -c --status expected.txt); then
 fi
 ```
 
-`sha256sum` is part of coreutils on Debian and Ubuntu; add it to the dependency probe when supporting other distributions.
+`sha256sum` is part of coreutils on Debian and Ubuntu; add it to the dependency probe when the Feature also works on other distributions as best effort.
 
 ## Checking the installed version
 
