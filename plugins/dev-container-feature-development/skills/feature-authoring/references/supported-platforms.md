@@ -42,7 +42,7 @@ Change the lists only when the user asks, and change everything that depends on 
 - **Adding an architecture to `RUNNERS`**: no Feature is tested on it until its job lists it. For each Feature, check that the upstream publishes a build for it, as the `new-feature` skill does, and extend the Feature as "Changing the architectures of a Feature" describes; leave it out only when there is no build. When the architecture is not in the table of "Architecture names" below, record its `uname -m` value as that section describes.
 - **Changing a runner**: nothing else depends on it. Confirm that the new runner is of that architecture: for a GitHub-hosted label, from GitHub's list of hosted runners; for a self-hosted one, by asking the user. A green CI run does not show it. Then run the tests in CI.
 
-Then have the `feature-reviewer` agent review every Feature.
+Then have the `feature-reviewer` agent review the lists, and every Feature unless only a runner changed.
 
 ## Initial values
 

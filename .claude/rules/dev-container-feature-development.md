@@ -20,7 +20,7 @@ Feature 実行環境となる Dev Container の OS とアーキテクチャに�
   - 正本は、そのリポジトリの CI ワークフローのテスト ジョブが呼ぶ再利用可能ワークフロー（通常は `test-feature.yaml`）の `baseImage` の一覧と、`RUNNERS` のキーである。「サポート対象とは、そのリポジトリの CI がテストしているもの」という定義になる。一覧のファイルを別に設けない。
   - Feature ごとには持たない。新しい LTS が出るたびに全 Feature を直すことになり、ほとんどが同じ内容の写しになるためである。アーキテクチャを Feature ごとに `architectures` で絞れるのは、upstream にビルドが無いアーキテクチャが Feature ごとに違うからで、ディストリビューションにはその事情がほとんど無い。
   - スキルとエージェントは、一覧をリポジトリのワークフローから読む。具体的なリリース、イメージ名、アーキテクチャを、規則として本文に書かない。例の中に書くのはよい。
-  - `init-repository` は、既存のリポジトリの `baseImage` と `RUNNERS` を雛形に合わせて書き換えない。雛形の初期値との差を、計画に情報として挙げるだけである。一覧を変えるときに一緒に直すもの（シナリオのイメージ、各 Feature の `NOTES.md`、ジョブの `architectures`）は、`supported-platforms.md` の「Changing a repository's lists」に書き、`feature-reviewer` が一覧の変更時に全 Feature を照らす。
+  - `init-repository` は、既存のリポジトリの `baseImage` と `RUNNERS` を雛形に合わせて書き換えない。雛形の初期値との差を、計画に情報として挙げるだけである。一覧を変えるときに一緒に直すもの（シナリオのイメージ、各 Feature の `install.sh` の `uname -m` 分岐と `NOTES.md`、ジョブの `architectures`）は、`supported-platforms.md` の「Changing a repository's lists」に書き、`feature-reviewer` が一覧の変更時に全 Feature を照らす。
 - プラグインに残すのは原則と初期値である。原則は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` に書く。
   - サポートと呼べるのは、CI でテストしているものだけである。
   - テストしていないディストリビューションは、`NOTES.md` にそう書く。
