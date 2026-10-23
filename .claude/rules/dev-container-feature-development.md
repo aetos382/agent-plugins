@@ -23,8 +23,8 @@ Feature 実行環境となる Dev Container の OS とアーキテクチャに�
   - `init-repository` は、既存のリポジトリの `baseImage` と `RUNNERS` を雛形に合わせて書き換えない。雛形の初期値との差を、計画に情報として挙げるだけである。一覧を変えるときに一緒に直すもの（シナリオのイメージ、各 Feature の `install.sh` の `uname -m` 分岐と `NOTES.md`、ジョブの `architectures`）は、`supported-platforms.md` の「Changing a repository's lists」に書き、`feature-reviewer` が一覧の変更時に全 Feature を照らす。
 - プラグインに残すのは原則と初期値である。原則は `plugins/dev-container-feature-development/skills/feature-authoring/references/supported-platforms.md` に書く。
   - サポートと呼べるのは、CI でテストしているものだけである。
-  - テストしていないディストリビューションは、`NOTES.md` にそう書く。
-  - 一覧に無いディストリビューションはベストエフォートとする。`install.sh` にパッケージ マネージャーの分岐を足す程度で動くなら、動くように書いてよい。CI ではテストせず、シナリオもジョブも足さず、サポートとは呼ばない。
+  - このプラグインで作る Feature は、Debian と Ubuntu だけをサポートする。一覧のベース イメージも、どれも Debian か Ubuntu から派生したものにする。他のディストリビューションのための分岐やエスケープ ハッチは、需要が出るまで設けない。
+  - サポートしないディストリビューションについては、`NOTES.md` にそう書く。
   - ベース イメージのタグは、リリースで固定する（digest を足すのはよい）。`RUNNERS` の GitHub ホステッド ランナーのラベルも、リリースで固定する。セルフホステッド ランナーをどう固定するかは、リポジトリに任せる。Feature を実行しないジョブ（`targets` や集約ジョブ）は `ubuntu-latest` でよい。
   - 一覧には `mcr.microsoft.com/devcontainers/base` のイメージを 1 つ以上含める。Feature を入れる先のほとんどがこのイメージから派生していること、非 root の `vscode` ユーザーで `_REMOTE_USER` の経路を試せることの 2 つが理由である。
   - 各アーキテクチャは、そのアーキテクチャのネイティブ ランナーでテストする。GitHub ホステッドかセルフホステッドかは、リポジトリが決める。
@@ -65,10 +65,11 @@ Feature 実行環境となる Dev Container の OS とアーキテクチャに�
 
 Feature に含まれるスクリプトの書き方について。
 
-- 依存パッケージのインストールには `apt-get` を使用してよい。`apt-get` がないディストリビューションで使用する場合は、Feature 利用者があらかじめ依存パッケージをインストールしておく必要がある。
-  - `apt-get` がない環境で、必須依存関係がインストールされていない場合は、エラーメッセージを出して、終了コード 1 で終了する。
+- 依存パッケージは `apt-get` だけで入れる。他のパッケージ マネージャーは使わない。
+  - 依存パッケージを入れる必要があるのに `apt-get` が無いときは、「Debian と Ubuntu だけをサポートする」というメッセージを出して、終了コード 1 で終了する。`apt-get` が無いことと、`apt-get` の実行の失敗を、メッセージで見分けられるようにするためである。足りない依存パッケージの一覧は出さなくてよい。
+  - ディストリビューションを `/etc/os-release` で確かめることは求めない。1 つのディストリビューション専用の Feature だけが確かめる。
 - Feature が必要とする依存関係は `src/<feature>/NOTES.md` に明記する。
-- テストはリポジトリの `baseImage` の一覧のすべてで行う。その他のディストリビューションではテストしていないことを `src/<feature>/NOTES.md` に明記する。
+- テストはリポジトリの `baseImage` の一覧のすべてで行う。
 - [nanolayer](https://github.com/devcontainers-extra/nanolayer) は使わない。
 - Feature が同じイメージで 2 回実行されることは、起こるものとして扱う。事前ビルドしたイメージに同じ Feature を書いた場合と、`dependsOn` で取り込まれたものと Feature 利用者が書いたものとでオプションや版が違う場合に、実際に 2 回実行される（devcontainer CLI 0.89.0 で確認）。
   - 2 回目の結果は、Feature が何を触るかで決める。自分で作る設定やファイルは後勝ち、一覧への追加は積み上げ、オプションから再現できないものは残す、とする。

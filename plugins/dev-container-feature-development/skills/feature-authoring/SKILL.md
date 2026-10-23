@@ -35,7 +35,7 @@ Only files inside `src/<id>/` are packaged. Anything `install.sh` needs at build
 
 The repository decides which platforms it supports, in the reusable workflow called by the test jobs of the CI workflow (usually `.github/workflows/test-feature.yaml`): the base images of its `baseImage` matrix, and the architectures that are keys of its `RUNNERS`. Every Feature must work on each of those base images, and CI tests all of them. Read the lists from that workflow whenever they matter; never take them from memory, from this plugin's examples, or from other workflows. `references/supported-platforms.md` says where to read them when the CI workflow has no test job yet or the repository has no CI workflow, and when to stop because they cannot be read from the workflow the test jobs call. It also explains the principles the lists follow and the initial values a new repository starts from.
 
-Distributions outside the list are at most best effort, as "Principles" in `references/supported-platforms.md` defines: make `install.sh` work on one only when that costs no more than a package-manager branch, and never call it supported. Never state or imply support that has not been tested: `NOTES.md` must say that only the distributions of the repository's list are tested. A platform counts as tested only when CI runs it; a local run covers just the developer's machine.
+Features made with this plugin support Debian and Ubuntu only, and the base images of the list are all based on one of them. Write no branch for other distributions or package managers. Never state or imply support that has not been tested: `NOTES.md` must say that only the distributions of the repository's list are tested, and that others are not supported. A platform counts as tested only when CI runs it; a local run covers just the developer's machine.
 
 Every Feature supports every architecture of `RUNNERS` and lists them in `architectures` of its `test-<id>` job in the CI workflow, which runs the tests on a native runner of each architecture (see the `feature-testing` skill). The list is required even when it names them all, so that adding an architecture to `RUNNERS` later does not silently extend Features whose upstream has no build for it. Leave an architecture out only when the upstream publishes no build for it; then `install.sh` fails on it with a message saying so, and `NOTES.md` explains the gap. Architectures that are not keys of `RUNNERS` are not supported at all, because CI cannot test them.
 
@@ -54,17 +54,17 @@ Do not stretch this to a tool whose upstream publishes no build for an architect
 ## Dependency policy
 
 - Install missing dependencies with `apt-get`. Probe for each command first (`command -v`) and install only what is missing, so that images that already have the tools are untouched.
-- When `apt-get` is unavailable and a required dependency is missing, print an error naming every missing dependency and `exit 1`. Do not attempt `apk`, `dnf`, or other package managers unless the Feature is written to work on that distribution as best effort (see "Supported platforms").
+- When a dependency has to be installed and `apt-get` is unavailable, print an error saying that `apt-get` is not available and that the Feature supports Debian and Ubuntu only, and `exit 1`. The message tells this case apart from a failed `apt-get` run. Do not attempt `apk`, `dnf`, or other package managers, and do not check `/etc/os-release` for this; only a Feature for one distribution checks it.
 - After `apt-get update`, whatever it was run for, remove `/var/lib/apt/lists/*` before the script ends, to keep the layer small. This also applies when nothing is installed afterward, for example when the update only confirms that rewritten apt sources are reachable.
 - Always pass `DEBIAN_FRONTEND=noninteractive` and `--no-install-recommends`.
-- List every runtime and build-time dependency in `NOTES.md`, including which ones are installed automatically and which ones must be preinstalled on images without `apt-get`.
+- List every runtime and build-time dependency in `NOTES.md`, including which ones are installed automatically.
 - Do not use [nanolayer](https://github.com/devcontainers-extra/nanolayer) or other install helpers that fetch code at build time. Keep the install logic in the Feature's own scripts.
 
 ## Writing install.sh
 
 Follow these rules. Detailed patterns with code are in `references/install-script.md`.
 
-1. **Shell.** Write POSIX `sh` (`#!/bin/sh`, `set -eu`) unless the script genuinely needs Bash; POSIX sh has no `pipefail`, so never pipe a command whose failure matters. When Bash is required, use `#!/bin/bash` and `set -euo pipefail`, and note in `NOTES.md` that Bash must exist on images without `apt-get`.
+1. **Shell.** Write POSIX `sh` (`#!/bin/sh`, `set -eu`) unless the script genuinely needs Bash; POSIX sh has no `pipefail`, so never pipe a command whose failure matters. When Bash is required, use `#!/bin/bash` and `set -euo pipefail`.
 2. **Root check.** Fail early with a clear message when `id -u` is not 0.
 3. **Options.** Each option arrives as an upper-cased environment variable (`myOption` → `MYOPTION`, non-word characters become `_`). Read with a default that matches `devcontainer-feature.json`, e.g. `VERSION="${VERSION:-latest}"`. Validate every value before use, booleans and `enum` options included, because the CLI does not enforce `type` or `enum`; free-form strings must never reach a path or command unchecked.
 4. **Messages.** Prefix every message with the Feature ID (`<id>: ...`) and send errors to stderr. State what failed and what the user can do about it.
@@ -93,8 +93,8 @@ The full property list, lifecycle hooks, `containerEnv`, `mounts`, `entrypoint`,
 Use these sections, omitting any that would be empty:
 
 - `## How it works` — what the script installs or changes, where, and why that method was chosen; what a second run on the same image yields (the later options win, the results add up, or what exists is kept).
-- `## Requirements` — dependencies; what `apt-get` installs automatically; what images without `apt-get` must provide.
-- `## Limitations` — tested distributions (those of the repository's `baseImage` matrix) and the statement that other distributions are untested; tested architectures (those in the Feature's test job), and why any architecture of `RUNNERS` is missing; for a Feature for one distribution, which distributions it is for and why; when the script warns and changes nothing; known gaps.
+- `## Requirements` — dependencies; what `apt-get` installs automatically.
+- `## Limitations` — tested distributions (those of the repository's `baseImage` matrix) and the statement that other distributions are not supported; tested architectures (those in the Feature's test job), and why any architecture of `RUNNERS` is missing; for a Feature for one distribution, which distributions it is for and why; when the script warns and changes nothing; known gaps.
 
 `examples/NOTES.md` shows the expected shape.
 
