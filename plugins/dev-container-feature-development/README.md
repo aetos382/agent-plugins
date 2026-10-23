@@ -19,14 +19,14 @@ A Claude Code plugin for authoring, testing, and releasing [Dev Container Featur
 
 | Skill | When it applies |
 |---|---|
-| `feature-authoring` | Editing `src/<id>/`: the `devcontainer-feature.json` schema, `install.sh` conventions, supported distributions and architectures, and dependency policy. |
+| `feature-authoring` | Editing `src/<id>/`: the `devcontainer-feature.json` schema, `install.sh` conventions, where the repository defines its supported platforms, and dependency policy. |
 | `feature-testing` | Editing `test/<id>/`: test kinds, scenarios, assertion scripts, and negative tests. |
 
 ### Agent
 
 | Agent | What it does |
 |---|---|
-| `feature-reviewer` | Reviews a Feature and its tests against the authoring policy and reports numbered findings. Runs at the end of `new-feature`, or when you ask for a review. |
+| `feature-reviewer` | Reviews a Feature and its tests against the authoring policy and reports numbered findings. Runs at the end of `new-feature`, when you ask for a review, and after the repository's base images or architectures change, across every Feature. |
 
 ## Conventions applied to Features
 

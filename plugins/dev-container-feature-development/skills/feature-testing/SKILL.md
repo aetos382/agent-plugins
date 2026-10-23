@@ -73,7 +73,7 @@ Every job must also be listed under `needs` of the workflow's aggregate job: the
   ```
 
   When one of them is the job's name or starts with it (the checks of a job that calls a reusable workflow carry the job's name as a prefix), tell the user that the rules have to be changed, and that the pull request cannot be merged until they are; changing them is the user's step. The command does not see classic branch protection and can fail for lack of permission; then say that the required checks could not be read. Make the change in either case.
-- **Changing the architectures of a Feature**: change the `uname -m` branches of `install.sh` and the Limitations of `NOTES.md` together with `architectures`, following the `feature-authoring` skill, since all three must agree. Leave out an architecture only when the upstream publishes no build for it. When the global scenarios use the Feature, narrow `architectures` of `test-global` to match.
+- **Changing the architectures of a Feature**: change the `uname -m` branches of `install.sh` and the Limitations of `NOTES.md` together with `architectures`, following the `feature-authoring` skill, since all three must agree. Leave out an architecture only when the upstream publishes no build for it. When the global scenarios use the Feature, narrow or extend `architectures` of `test-global` so that it lists the architectures that every Feature used by the global scenarios supports.
 
 ## Writing assertion scripts
 
