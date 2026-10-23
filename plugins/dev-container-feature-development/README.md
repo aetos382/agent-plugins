@@ -30,10 +30,10 @@ A Claude Code plugin for authoring, testing, and releasing [Dev Container Featur
 
 ## Conventions applied to Features
 
-- Each repository decides the distributions and architectures it supports, as the `baseImage` matrix and the keys of `RUNNERS` in its reusable test workflow (usually `test-feature.yaml`). Features must work on every base image there, and CI tests them all. Only what CI tests counts as supported. Features support Debian and Ubuntu only, and every base image of the list is based on one of them.
+- Each repository decides the distributions and architectures it supports, as the `baseImage` matrix and the keys of `RUNNERS` in its reusable test workflow (usually `test-feature.yaml`). Features must work on every base image there, and CI tests them all. Only what CI tests counts as supported. The plugin's rules and templates cover Debian and Ubuntu on amd64 and arm64, tested on GitHub-hosted runners; a repository may go beyond them on its own.
 - The base images are pinned to releases and include at least one `mcr.microsoft.com/devcontainers/base` image, which most dev containers are built on and which tests a non-root user. Each architecture is tested on a native runner of that architecture. A new repository starts from the initial values in the `init-repository` template; [supported-platforms.md](skills/feature-authoring/references/supported-platforms.md) explains how they are chosen. `init-repository` never changes these lists in an existing repository.
 - Each Feature lists its architectures in its job in the CI workflow, and may leave one out only when the upstream publishes no build for it.
-- Missing dependencies are installed with `apt-get`. Without `apt-get`, the Feature fails with a message saying that it supports Debian and Ubuntu only.
+- Missing dependencies are installed with `apt-get`. When a dependency is missing and `apt-get` is not available, the Feature fails with a message saying that a Debian- or Ubuntu-based image is needed.
 - Downloads are verified by checksum or signature.
 - Dependencies, tested distributions, and tested architectures are documented in each Feature's `NOTES.md`.
 - Failure paths that `devcontainer features test` cannot express are documented in `test/<id>/negative-tests.md`, which `run-feature-tests` executes.

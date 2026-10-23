@@ -61,5 +61,5 @@ VERSION=latest sh /mnt/f/install.sh; echo "exit status: $?"
 Expected: exit status 1, and nothing is installed. `debian:12` lacks `curl`, so the script needs `apt-get`.
 
 ```
-mytool: apt-get is not available. This Feature supports Debian and Ubuntu only.
+mytool: a dependency has to be installed, but apt-get is not available. Use a Debian- or Ubuntu-based image.
 ```

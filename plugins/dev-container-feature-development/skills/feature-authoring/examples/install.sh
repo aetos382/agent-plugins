@@ -55,7 +55,7 @@ fi
 if [ -n "${MISSING_PACKAGES}" ]; then
   if ! command -v 'apt-get' >/dev/null 2>&1; then
     # Covered by test/mytool/negative-tests.md, Case D.
-    echo "${FEATURE_ID}: apt-get is not available. This Feature supports Debian and Ubuntu only." >&2
+    echo "${FEATURE_ID}: a dependency has to be installed, but apt-get is not available. Use a Debian- or Ubuntu-based image." >&2
     exit 1
   fi
   apt-get update -y

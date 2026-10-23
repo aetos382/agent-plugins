@@ -21,12 +21,11 @@ Skills and agents read the lists from the workflow each time, and never write th
 
 These hold for every repository, whatever it lists:
 
-- **Supported means tested by CI.** A platform counts as supported only when the CI workflow runs the Feature on it. A local run on the developer's machine does not count, because it covers only that machine's architecture and is not repeated on every pull request.
-- **Debian and Ubuntu only.** Features made with this plugin support Debian and Ubuntu, and every base image of the list is based on one of them. `install.sh` installs dependencies with `apt-get` and nothing else; where it needs `apt-get` and finds none, it fails with a message saying that the Feature supports Debian and Ubuntu only. It has no branches for other package managers.
-- **Untested is said so.** Each Feature's `NOTES.md` names the distributions it is tested on and says that others are not supported.
-- **Tags are pinned.** Each base image names a release (`debian:13`, not `debian:latest` or `debian`), optionally with a digest. Under a floating tag, an image moving to a new release would drop the old release from the tests without notice, and could fail every pull request at once. The GitHub-hosted runners in `RUNNERS`, which run the Features, are pinned in the same way, by a label that names a release rather than one such as `ubuntu-latest`; how a self-hosted runner stays on a fixed release is up to the repository. Moving to a newer release is a deliberate change of the repository. Jobs that do not run the Features, such as `targets` or the aggregate job, may use `ubuntu-latest`, since a new release there changes no tested platform.
+- **Scope.** This plugin's rules, templates, and examples cover Debian and Ubuntu on amd64 and arm64, tested on GitHub-hosted runners. A repository may go beyond them, for example with an Alpine image in its list and an `apk` branch in `install.sh`; such parts are the repository's own, and this plugin's rules do not apply to them.
+- **Supported means tested by CI.** A platform counts as supported only when the CI workflow runs the Feature on it. A local run on the developer's machine does not count, because it covers only that machine's architecture and is not repeated on every pull request. Each Feature's `NOTES.md` names the distributions, releases, and architectures that CI tests it on.
+- **Tags are pinned.** Each base image names a release (`debian:13`, not `debian:latest` or `debian`), optionally with a digest. Under a floating tag, an image moving to a new release would drop the old release from the tests without notice, and could fail every pull request at once. The runners in `RUNNERS`, which run the Features, are pinned in the same way, by a label that names a release rather than one such as `ubuntu-latest`. Moving to a newer release is a deliberate change of the repository. Jobs that do not run the Features, such as `targets` or the aggregate job, may use `ubuntu-latest`, since a new release there changes no tested platform.
 - **At least one `mcr.microsoft.com/devcontainers/base` image.** Most dev containers that install Features are built on these images, so the Features must be shown to work there. They also have a non-root `vscode` user, which exercises the `_REMOTE_USER` path; the non-root scenarios of the `feature-testing` skill run on them.
-- **Architectures on native runners.** Each architecture is tested on a runner of that architecture, not under emulation. An architecture without such a runner cannot be supported. Whether the runners are GitHub-hosted or self-hosted is the repository's choice.
+- **Architectures on native runners.** Each architecture is tested on a runner of that architecture, not under emulation. An architecture without such a runner cannot be supported.
 - **A Feature covers every listed base image and architecture.** A Feature works on every base image of the list. It leaves out an architecture of `RUNNERS` only when its upstream publishes no build for it. A Feature whose purpose has no meaning on some distributions follows "Features for one distribution" in the `feature-authoring` skill rather than narrowing the list.
 
 The checks that can be made from the lists alone are: every base image pinned to a release, at least one `devcontainers/base` image, every GitHub-hosted runner in `RUNNERS` pinned to a release, and no two keys of `RUNNERS` mapped to the same runner. Whether a runner really is of its architecture cannot be seen from the lists or from a green CI run, since the tests of most Features pass on the wrong architecture too.
@@ -39,8 +38,8 @@ Change the lists only when the user asks, and change everything that depends on 
 - **Adding or removing a base image**: update the tested distributions in the Limitations of every Feature's `NOTES.md`. A Feature for one distribution also states which of the listed distributions it is for.
 - **Adding a base image**: run the tests of every Feature on it (the `run-feature-tests` skill) before merging, since every Feature now claims support for it.
 - **Removing an architecture from `RUNNERS`**: remove it from `architectures` of every job of the CI workflow, since `test-feature.yaml` fails a job that names it, and from the `uname -m` branches of `install.sh` and the Limitations of `NOTES.md` of each Feature, as "Changing the architectures of a Feature" in the `feature-testing` skill describes.
-- **Adding an architecture to `RUNNERS`**: no Feature is tested on it until its job lists it. For each Feature, check that the upstream publishes a build for it, as the `new-feature` skill does, and extend the Feature as "Changing the architectures of a Feature" describes; leave it out only when there is no build. When the architecture is not in the table of "Architecture names" below, record its `uname -m` value as that section describes.
-- **Changing a runner**: nothing else depends on it. Confirm that the new runner is of that architecture: for a GitHub-hosted label, from GitHub's list of hosted runners; for a self-hosted one, by asking the user. A green CI run does not show it. Then run the tests in CI.
+- **Adding an architecture to `RUNNERS`**: no Feature is tested on it until its job lists it. For each Feature, check that the upstream publishes a build for it, as the `new-feature` skill does, and extend the Feature as "Changing the architectures of a Feature" describes; leave it out only when there is no build.
+- **Changing a runner**: nothing else depends on it. Confirm from GitHub's list of hosted runners that the new label is of that architecture. A green CI run does not show it. Then run the tests in CI.
 
 Then have the `feature-reviewer` agent review the lists, and every Feature unless only a runner changed.
 
@@ -60,15 +59,11 @@ The initial values are chosen as follows. This is one reasonable choice, not a r
 
 ## Architecture names
 
-The keys of `RUNNERS` are the architecture names that the `run-feature-tests` skill matches against `uname -m` of the Docker host, and that the `uname -m` branches of each Feature's `install.sh` correspond to (whatever names the upstream uses inside those branches). This table covers at least the keys of the initial values. Rows are only ever added, never removed, since repositories that took an architecture from earlier initial values rely on its row:
+The keys of `RUNNERS` are the architecture names that the `run-feature-tests` skill matches against `uname -m` of the Docker host, and that the `uname -m` branches of each Feature's `install.sh` correspond to (whatever names the upstream uses inside those branches). The architectures within this plugin's scope are:
 
 | Architecture | `uname -m` |
 |---|---|
 | amd64 | `x86_64` |
 | arm64 | `aarch64` |
 
-A repository whose `RUNNERS` has a key that is not in the table records its `uname -m` value as a comment line directly above `RUNNERS`, in the form `# uname -m of <key>: <value>`, since `RUNNERS` itself holds JSON. To map `uname -m` to a key, use the table, then those comment lines. A key that is in neither has no known value yet:
-
-- **Matching the Docker host** (`run-feature-tests`): ask the user the value, once per key, and add the comment line with the answer so that it is not asked again. When the user does not know it, add no line, and say that the key matches no host until its value is recorded.
-- **Writing the `uname -m` branches of `install.sh`**: ask the user in the same way. When the value stays unknown, write no branch for that architecture, and tell the user that the Feature fails on it until the value is recorded.
-- **Reviewing the branches** (`feature-reviewer`): do not guess the value. Report as High that the branches could not be checked for that key, and that its value has to be recorded as above.
+Any other key of `RUNNERS` is outside the scope (see "Scope" above).
