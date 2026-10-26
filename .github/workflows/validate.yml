@@ -1,5 +1,3 @@
-# This workflow is managed by gh actions-lock.
-
 name: "Validate"
 on:
   push:
@@ -97,6 +95,14 @@ jobs:
           ' "${root}/.github/workflows/ci.yaml"
           docker run --rm -v "${root}:/repo" -w /repo "${ACTIONLINT_IMAGE}" -color
 
+  # A mistake in renovate.json goes unnoticed until Renovate stops after the merge, so it is
+  # validated before the merge. The reusable workflow of the shared preset repository is referenced
+  # by @main, like the presets. gh actions-lock does not pin a job-level uses (checked with v0.2.0),
+  # so it is not in actions.lock. The Renovate version is the one written in the reusable workflow,
+  # which Renovate updates there.
+  renovate-config:
+    uses: aetos382/renovate-presets/.github/workflows/renovate-config.yml@main
+
   # A mismatch between the workflows and actions.lock, or a lockfile that cannot be read, does not
   # show in the workflows themselves, and the pre-commit hook can be bypassed, so it is stopped here.
   actions-lock:
@@ -126,7 +132,7 @@ jobs:
           gh extension install github/gh-actions-lock --pin "${GH_ACTIONS_LOCK_VERSION}"
           # The exit code alone is not enough: when the GitHub API cannot be reached, the commits
           # are left unverified, which is reported only as a warning finding with exit code 0.
-          # Info findings (such as the record of a deleted workflow) are allowed. Checked with v0.1.6.
+          # Info findings (such as the record of a deleted workflow) are allowed. Checked with v0.2.0.
           status=0
           result="$(gh actions-lock --no-fix --no-interactive --verify --json=valid,findings)" || status=$?
           printf '%s\n' "${result}"
@@ -148,6 +154,7 @@ jobs:
       - plugin-validate
       - shellcheck
       - actionlint
+      - renovate-config
       - actions-lock
     steps:
       - name: "Check the results of the validation jobs"
@@ -155,4 +162,5 @@ jobs:
           test '${{ needs.plugin-validate.result }}' = success \
             && test '${{ needs.shellcheck.result }}' = success \
             && test '${{ needs.actionlint.result }}' = success \
+            && test '${{ needs.renovate-config.result }}' = success \
             && test '${{ needs.actions-lock.result }}' = success

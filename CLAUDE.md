@@ -4,8 +4,6 @@
 
 Claude Code のプラグインを配布するマーケットプレイス。
 
-- `.claude-plugin/marketplace.json`: マーケットプレイスの定義。プラグインを追加したら、ここに登録する。
-- `plugins/<name>/`: 各プラグイン。マニフェストは `plugins/<name>/.claude-plugin/plugin.json`。
 - プラグイン固有の開発方針は `.claude/rules/<name>.md` に `paths` 付きで書く。`plugins/<name>/` 以下は丸ごと配布されるため、そこに `CLAUDE.md` を置かない。
 
 ## 対象エージェント
@@ -23,6 +21,7 @@ Claude Code のプラグインを配布するマーケットプレイス。
 ## プラグインの開発
 
 - プラグイン全般の開発には `plugin-dev` プラグイン、プラグインに内蔵するスキルの開発には `skill-creator` プラグインを使う。作成後のレビューには `plugin-dev:plugin-validator` と `plugin-dev:skill-reviewer` を使う。
+- プラグインを追加したら、`.claude-plugin/marketplace.json` に登録する。
 - `plugin.json` には `version` を SemVer で書き、プラグイン利用者に届けたい変更をしたら上げる。`marketplace.json` のエントリには `version` を書かない。
 - プラグイン実行環境の OS に依存するコードは避ける。
 - プラグインを構成するスクリプトは Bash 用のシェル スクリプトで書く。
@@ -32,12 +31,10 @@ Claude Code のプラグインを配布するマーケットプレイス。
   - フック等からスクリプトを呼ぶときは `bash "${CLAUDE_PLUGIN_ROOT}/..."` の形にし、実行ビットに頼らない。
   - `jq` 等、Git に同梱されないコマンドに依存する場合は、スクリプトの冒頭で存在を確認し、必須要件としてプラグイン利用者向けの文書に書く。
 - コード中のコメントはアメリカ英語で書く。
-- `*-lock.json` は手で編集せず、生成ツールで再生成する。
 
 ## プラグインのチェックおよびレビュー
 
 - プラグインやマーケットプレイスの構成要素を変更したら `claude plugin validate --strict` で検証する。マーケットプレイスはリポジトリのルートを、プラグインは `plugins/<name>` を渡す。
-- シェル スクリプトを変更したら `shellcheck` を実行する。
 - プル リクエストを出す前には、`/pr-review-toolkit:review-pr` でレビューを実行する。
   - レビュー エージェントには、対象プラグインの `.claude/rules/<name>.md` を必ず読ませる。指摘の範囲を決める前提（利用の前提など）がそこに書かれているため。
 
@@ -58,13 +55,4 @@ Claude Code のプラグインを配布するマーケットプレイス。
 
 ## ソース管理
 
-本リポジトリのソース管理について。
-
-- `main` ブランチにはコミットしない。機能開発は適当なトピック ブランチで行う。
-- コミット メッセージやプル リクエストのサマリーは日本語で書く。
-
-## `devcontainer-lock.json` の更新
-
-- features の更新は、Dependabot（`.github/dependabot.yml`）が `.devcontainer/devcontainer-lock.json` の更新として提案する。それ以外の依存関係の更新は Renovate（`renovate.json`）で行う。詳しくは `.claude/rules/renovate.md` にある。
-- `devcontainer.json` の features を足したり変えたりしたときは、`devcontainer upgrade` コマンドでロックファイルを作り直す。
-- 末尾の改行だけの差分が出たら、その差分は採用せず、最新の CLI（`PATH` 上の `devcontainer`）で `devcontainer upgrade` をやり直した結果を正とする。Codespaces に同梱の古い CLI が、ビルド時に改行なしで書き出すことがあるため。
+`main` ブランチにはコミットしない。機能開発は適当なトピック ブランチで行う。
