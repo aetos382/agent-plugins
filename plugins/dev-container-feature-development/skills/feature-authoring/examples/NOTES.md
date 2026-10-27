@@ -8,11 +8,10 @@
 
 ## Requirements
 
-- `curl`, `ca-certificates`, `tar`, `gzip`, and `sha256sum` (coreutils). On images with `apt-get`, the missing ones are installed automatically.
-- On images without `apt-get`, install them beforehand; the Feature fails with a message naming what is missing.
+- `curl`, `ca-certificates`, `tar`, `gzip`, and `sha256sum` (coreutils). The missing ones are installed automatically with `apt-get`.
 
 ## Limitations
 
-- Tested on Ubuntu 26.04, Ubuntu 24.04, Debian 13, and Debian 12. Other distributions are not tested.
-- Linux only. Tested on `amd64` and `arm64`, the architectures CI runs; other architectures are not supported.
+- Tested on Ubuntu 26.04, Ubuntu 24.04, Debian 13, and Debian 12, the distributions CI runs. On an image without `apt-get`, the Feature fails when it has a dependency to install.
+- Linux only. Tested on `amd64` and `arm64`, the architectures CI runs.
 - Pin an exact version for reproducible builds; `latest` changes whenever upstream releases.

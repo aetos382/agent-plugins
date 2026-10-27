@@ -27,7 +27,7 @@ fi
 
 ## Probing and installing dependencies
 
-Probe by command, not by package, so that images which provide the tool some other way are left alone. Collect everything that is missing, then install once or fail once with the full list.
+Probe by command, not by package, so that images which provide the tool some other way are left alone. Collect everything that is missing, then install it in one `apt-get` run. Where something is missing and `apt-get` is not, fail with a message saying so, which tells this case apart from a failed `apt-get` run.
 
 ```sh
 MISSING_PACKAGES=''
@@ -45,18 +45,12 @@ add_missing_package 'gzip' 'gzip'
 # curl can be present without a CA bundle when ca-certificates was skipped by
 # --no-install-recommends; HTTPS then fails with an error that looks like a missing release.
 if command -v 'curl' >/dev/null 2>&1 && [ ! -e '/etc/ssl/certs/ca-certificates.crt' ]; then
-  if command -v 'apt-get' >/dev/null 2>&1; then
-    MISSING_PACKAGES="${MISSING_PACKAGES} ca-certificates"
-  else
-    # Not fatal: an image without apt-get may keep its trust store elsewhere.
-    echo "${FEATURE_ID}: no CA bundle at /etc/ssl/certs/ca-certificates.crt; a certificate error below would be why." >&2
-  fi
+  MISSING_PACKAGES="${MISSING_PACKAGES} ca-certificates"
 fi
 
 if [ -n "${MISSING_PACKAGES}" ]; then
   if ! command -v 'apt-get' >/dev/null 2>&1; then
-    echo "${FEATURE_ID}: the following are required but missing, and apt-get is unavailable to install them:${MISSING_PACKAGES}" >&2
-    echo "${FEATURE_ID}: install them in your base image, or use a Debian/Ubuntu-based image." >&2
+    echo "${FEATURE_ID}: a dependency has to be installed, but apt-get is not available. Use a Debian- or Ubuntu-based image." >&2
     exit 1
   fi
   apt-get update -y
@@ -262,7 +256,7 @@ if ! (cd "${TMP_DIR}" && sha256sum -c --status expected.txt); then
 fi
 ```
 
-`sha256sum` is part of coreutils on Debian and Ubuntu; add it to the dependency probe when supporting other distributions.
+`sha256sum` is part of coreutils on Debian and Ubuntu.
 
 ## Checking the installed version
 

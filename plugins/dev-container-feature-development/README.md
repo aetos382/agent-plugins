@@ -19,20 +19,21 @@ A Claude Code plugin for authoring, testing, and releasing [Dev Container Featur
 
 | Skill | When it applies |
 |---|---|
-| `feature-authoring` | Editing `src/<id>/`: the `devcontainer-feature.json` schema, `install.sh` conventions, supported distributions and architectures, and dependency policy. |
+| `feature-authoring` | Editing `src/<id>/`: the `devcontainer-feature.json` schema, `install.sh` conventions, where the repository defines its supported platforms, and dependency policy. |
 | `feature-testing` | Editing `test/<id>/`: test kinds, scenarios, assertion scripts, and negative tests. |
 
 ### Agent
 
 | Agent | What it does |
 |---|---|
-| `feature-reviewer` | Reviews a Feature and its tests against the authoring policy and reports numbered findings. Runs at the end of `new-feature`, or when you ask for a review. |
+| `feature-reviewer` | Reviews a Feature and its tests against the authoring policy and reports numbered findings. Runs at the end of `new-feature`, when you ask for a review, and after the repository's base images or architectures change, across every Feature. |
 
 ## Conventions applied to Features
 
-- Features must work on Ubuntu 26.04, Ubuntu 24.04, Debian 13, and Debian 12 (the latest two Ubuntu LTS releases and Debian stable and oldstable), and CI tests them all, plus `mcr.microsoft.com/devcontainers/base:3-ubuntu26.04` and `mcr.microsoft.com/devcontainers/base:3-ubuntu24.04` for a non-root user. Other distributions are supported only when that costs no more than a package-manager branch.
-- Features support amd64 and arm64, and CI tests each on a native GitHub-hosted runner of that architecture (listed in [supported-platforms.md](skills/feature-authoring/references/supported-platforms.md)). Each Feature lists its architectures in its job in the CI workflow, and may leave one out only when the upstream publishes no build for it.
-- Missing dependencies are installed with `apt-get`. Without `apt-get`, the Feature fails with a message naming what is missing.
+- Each repository decides the distributions and architectures it supports, as the `baseImage` matrix and the keys of `RUNNERS` in its reusable test workflow (usually `test-feature.yaml`). Features must work on every base image there, and CI tests them all. Only what CI tests counts as supported. The plugin's rules and templates cover Debian and Ubuntu on amd64 and arm64, tested on GitHub-hosted runners; a repository may go beyond them on its own.
+- The base images are pinned to releases and include at least one `mcr.microsoft.com/devcontainers/base` image, which most dev containers are built on and which tests a non-root user. Each architecture is tested on a native runner of that architecture. A new repository starts from the initial values in the `init-repository` template; [supported-platforms.md](skills/feature-authoring/references/supported-platforms.md) explains how they are chosen. `init-repository` never changes these lists in an existing repository.
+- Each Feature lists its architectures in its job in the CI workflow, and may leave one out only when the upstream publishes no build for it.
+- Missing dependencies are installed with `apt-get`. When a dependency is missing and `apt-get` is not available, the Feature fails with a message saying that a Debian- or Ubuntu-based image is needed.
 - Downloads are verified by checksum or signature.
 - Dependencies, tested distributions, and tested architectures are documented in each Feature's `NOTES.md`.
 - Failure paths that `devcontainer features test` cannot express are documented in `test/<id>/negative-tests.md`, which `run-feature-tests` executes.

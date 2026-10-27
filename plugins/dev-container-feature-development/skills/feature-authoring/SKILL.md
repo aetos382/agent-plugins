@@ -33,11 +33,11 @@ Only files inside `src/<id>/` are packaged. Anything `install.sh` needs at build
 
 ## Supported platforms
 
-Every Feature must work on the latest two Ubuntu LTS releases and on Debian stable and oldstable, and CI tests all of them, plus `mcr.microsoft.com/devcontainers/base` images with a non-root user. Read `references/supported-platforms.md` for the current releases, image names, and architectures; it is the single source of truth, so never take them from memory or from other files.
+The repository decides which platforms it supports, in the reusable workflow called by the test jobs of the CI workflow (usually `.github/workflows/test-feature.yaml`): the base images of its `baseImage` matrix, and the architectures that are keys of its `RUNNERS`. Every Feature must work on each of those base images, and CI tests all of them. Read the lists from that workflow whenever they matter; never take them from memory, from this plugin's examples, or from other workflows. `references/supported-platforms.md` says where to read them when the CI workflow has no test job yet or the repository has no CI workflow, and when to stop because they cannot be read from the workflow the test jobs call. It also explains the principles the lists follow and the initial values a new repository starts from.
 
-Other distributions are supported only when doing so costs no more than a package-manager branch. Never state or imply support that has not been tested: `NOTES.md` must say that only the supported distributions are tested. A platform counts as tested only when CI runs it; a local run covers just the developer's machine.
+This plugin's rules cover Debian and Ubuntu on amd64 and arm64; "Scope" in `references/supported-platforms.md` says what that means for a repository that goes beyond them. Write a branch for another distribution, package manager, or architecture when the user asks for one, or when the repository's lists include a base image or architecture that needs one (such as an Alpine image, which needs an `apk` branch), and then from general knowledge: this plugin's rules do not cover it. Never state or imply support that has not been tested: `NOTES.md` names what CI tests and claims nothing beyond it. A platform counts as tested only when CI runs it; a local run covers just the developer's machine.
 
-Every Feature supports every architecture in `references/supported-platforms.md` and lists them in `architectures` of its `test-<id>` job in the CI workflow, which runs the tests on a native runner of each architecture (see the `feature-testing` skill). The list is required even when it names them all, so that adding an architecture to the plugin later does not silently extend Features whose upstream has no build for it. Leave an architecture out only when the upstream publishes no build for it; then `install.sh` fails on it with a message saying so, and `NOTES.md` explains the gap. Architectures missing from `references/supported-platforms.md` are not supported at all, because CI cannot test them.
+Every Feature supports every architecture of `RUNNERS` and lists them in `architectures` of its `test-<id>` job in the CI workflow, which runs the tests on a native runner of each architecture (see the `feature-testing` skill). The list is required even when it names them all, so that adding an architecture to `RUNNERS` later does not silently extend Features whose upstream has no build for it. Leave an architecture out only when the upstream publishes no build for it; then `install.sh` fails on it with a message saying so, and `NOTES.md` explains the gap. Architectures that are not keys of `RUNNERS` are not supported at all, because CI cannot test them.
 
 ### Features for one distribution
 
@@ -45,7 +45,7 @@ Some Features have no meaning on part of the supported platforms. One that adds 
 
 - With default options, change nothing and succeed, so that the auto-generated test passes on every base image.
 - When an option asks for the work on a distribution the Feature is not for, fail with an error that names the distributions it is for. The base image is fixed by `devcontainer.json`, so every build gets the same result, and stopping it is right.
-- In `NOTES.md` Limitations, name the distributions the Feature is for and say why the others are out of scope.
+- In `NOTES.md` Limitations, name the distributions the Feature is for and say why it does not do its work on the others.
 
 Any Feature, not only one for a single distribution, can meet a supported architecture where there is nothing to act on: one that points apt at a mirror finds, on Ubuntu's arm64 images, another host than the one it replaces. There, warn and change nothing instead of failing, because one `devcontainer.json` is built on both architectures and a failure would lock out the users of one. Keep the architecture in `architectures`, test the no-op, and describe it in Limitations.
 
@@ -54,21 +54,21 @@ Do not stretch this to a tool whose upstream publishes no build for an architect
 ## Dependency policy
 
 - Install missing dependencies with `apt-get`. Probe for each command first (`command -v`) and install only what is missing, so that images that already have the tools are untouched.
-- When `apt-get` is unavailable and a required dependency is missing, print an error naming every missing dependency and `exit 1`. Do not attempt `apk`, `dnf`, or other package managers unless the Feature explicitly supports that distribution.
+- When a dependency has to be installed and `apt-get` is unavailable, print an error saying so and that a Debian- or Ubuntu-based image is needed, and `exit 1`. The message tells this case apart from a failed `apt-get` run. Do not list the missing dependencies in it, and do not check `/etc/os-release` to decide whether `apt-get` is there; `command -v apt-get` tells that.
 - After `apt-get update`, whatever it was run for, remove `/var/lib/apt/lists/*` before the script ends, to keep the layer small. This also applies when nothing is installed afterward, for example when the update only confirms that rewritten apt sources are reachable.
 - Always pass `DEBIAN_FRONTEND=noninteractive` and `--no-install-recommends`.
-- List every runtime and build-time dependency in `NOTES.md`, including which ones are installed automatically and which ones must be preinstalled on images without `apt-get`.
+- List every runtime and build-time dependency in `NOTES.md`, including which ones are installed automatically.
 - Do not use [nanolayer](https://github.com/devcontainers-extra/nanolayer) or other install helpers that fetch code at build time. Keep the install logic in the Feature's own scripts.
 
 ## Writing install.sh
 
 Follow these rules. Detailed patterns with code are in `references/install-script.md`.
 
-1. **Shell.** Write POSIX `sh` (`#!/bin/sh`, `set -eu`) unless the script genuinely needs Bash; POSIX sh has no `pipefail`, so never pipe a command whose failure matters. When Bash is required, use `#!/bin/bash` and `set -euo pipefail`, and note in `NOTES.md` that Bash must exist on images without `apt-get`.
+1. **Shell.** Write POSIX `sh` (`#!/bin/sh`, `set -eu`) unless the script genuinely needs Bash; POSIX sh has no `pipefail`, so never pipe a command whose failure matters. When Bash is required, use `#!/bin/bash` and `set -euo pipefail`.
 2. **Root check.** Fail early with a clear message when `id -u` is not 0.
 3. **Options.** Each option arrives as an upper-cased environment variable (`myOption` → `MYOPTION`, non-word characters become `_`). Read with a default that matches `devcontainer-feature.json`, e.g. `VERSION="${VERSION:-latest}"`. Validate every value before use, booleans and `enum` options included, because the CLI does not enforce `type` or `enum`; free-form strings must never reach a path or command unchecked.
 4. **Messages.** Prefix every message with the Feature ID (`<id>: ...`) and send errors to stderr. State what failed and what the user can do about it.
-5. **Architecture.** Detect with `uname -m`, not `dpkg --print-architecture`, so detection does not depend on Debian tooling. Accept exactly the architectures in the Feature's test job, and fail with a message for any other value. An accepted architecture may be the no-op that "Features for one distribution" describes.
+5. **Architecture.** Detect with `uname -m`, not `dpkg --print-architecture`, so detection does not depend on Debian tooling. Accept exactly the architectures in the Feature's test job, and fail with a message for any other value. Which `uname -m` value each architecture name stands for is given by "Architecture names" in `references/supported-platforms.md`. An architecture other than amd64 and arm64 is outside the plugin's scope, as "Scope" in `references/supported-platforms.md` describes; write its branch as "Supported platforms" above says. An accepted architecture may be the no-op that "Features for one distribution" describes.
 6. **Downloads.** Use `curl -fsSL --retry 3`. Verify every downloaded artifact against a checksum file or signature that the upstream publishes separately from the artifact. Prefer signatures, and pin the signing key's fingerprint in the script. A checksum file from the same release protects against corrupted downloads but not against a compromised release; when that is all the upstream offers, use it and say so in `NOTES.md`. When a version is pinned, confirm the installed binary reports that version.
 7. **Temporary files.** Create them with `mktemp -d` and remove them in an `EXIT` trap.
 8. **Users.** The script runs as root. Use `_REMOTE_USER` / `_REMOTE_USER_HOME` for per-user setup, `chown` what is created in a user's home, and never assume the user is `root` or `vscode`.
@@ -93,8 +93,8 @@ The full property list, lifecycle hooks, `containerEnv`, `mounts`, `entrypoint`,
 Use these sections, omitting any that would be empty:
 
 - `## How it works` — what the script installs or changes, where, and why that method was chosen; what a second run on the same image yields (the later options win, the results add up, or what exists is kept).
-- `## Requirements` — dependencies; what `apt-get` installs automatically; what images without `apt-get` must provide.
-- `## Limitations` — tested distributions (from `references/supported-platforms.md`) and the statement that other distributions are untested; tested architectures (those in the Feature's test job), and why any architecture of `references/supported-platforms.md` is missing; for a Feature for one distribution, which distributions it is for and why; when the script warns and changes nothing; known gaps.
+- `## Requirements` — dependencies; what `apt-get` installs automatically.
+- `## Limitations` — tested distributions and releases (those of the repository's `baseImage` matrix); tested architectures (those in the Feature's test job), and why any architecture of `RUNNERS` is missing; for a Feature for one distribution, which distributions it is for and why; when the script warns and changes nothing; known gaps.
 
 `examples/NOTES.md` shows the expected shape.
 
@@ -106,7 +106,7 @@ Use these sections, omitting any that would be empty:
 
 ## Additional resources
 
-- **`references/supported-platforms.md`** — supported releases, test images, the CI base-image list, and architectures with their CI runners.
+- **`references/supported-platforms.md`** — where a repository defines its supported base images and architectures, the principles they follow, and the initial values of a new repository.
 - **`references/install-script.md`** — code patterns for install.sh: root check, dependency probing, architecture mapping, version resolution, option validation, verified downloads, temp-dir cleanup, per-user setup, idempotency.
 - **`references/feature-json.md`** — devcontainer-feature.json property reference, option-to-environment mapping, lifecycle hooks, install order.
 - **`examples/install.sh`** — a complete install.sh that downloads a release binary, verifies its checksum, and installs it.

@@ -1,6 +1,6 @@
 # Manual negative tests for `install.sh`
 
-`install.sh` rejects a malformed or nonexistent `version`, an unsupported architecture, and missing dependencies on an image without `apt-get`. None of that can be covered by `devcontainer features test`: the harness treats a failed build as a failed test, so a case that is supposed to fail cannot be expressed. Run the cases below whenever the option validation, version resolution, architecture detection, or dependency handling in `install.sh` changes.
+`install.sh` rejects a malformed or nonexistent `version`, an unsupported architecture, and an image without `apt-get` that lacks a dependency. None of that can be covered by `devcontainer features test`: the harness treats a failed build as a failed test, so a case that is supposed to fail cannot be expressed. Run the cases below whenever the option validation, version resolution, architecture detection, or dependency handling in `install.sh` changes.
 
 ## Setup
 
@@ -58,9 +58,8 @@ mv /usr/bin/apt-get /usr/bin/apt-get.disabled
 VERSION=latest sh /mnt/f/install.sh; echo "exit status: $?"
 ```
 
-Expected: exit status 1, and nothing is installed. `debian:12` lacks `curl`, so the message names at least `curl`.
+Expected: exit status 1, and nothing is installed. `debian:12` lacks `curl`, so the script needs `apt-get`.
 
 ```
-mytool: the following are required but missing, and apt-get is unavailable to install them:
-mytool: install them in your base image, or use a Debian/Ubuntu-based image.
+mytool: a dependency has to be installed, but apt-get is not available. Use a Debian- or Ubuntu-based image.
 ```

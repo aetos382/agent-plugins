@@ -49,19 +49,13 @@ add_missing_package 'sha256sum' 'coreutils'
 # An image can ship curl without ca-certificates when it was skipped by --no-install-recommends;
 # HTTPS then fails with a certificate error that reads like a missing release.
 if command -v 'curl' >/dev/null 2>&1 && [ ! -e '/etc/ssl/certs/ca-certificates.crt' ]; then
-  if command -v 'apt-get' >/dev/null 2>&1; then
-    MISSING_PACKAGES="${MISSING_PACKAGES} ca-certificates"
-  else
-    # Not fatal: an image without apt-get may keep its trust store elsewhere.
-    echo "${FEATURE_ID}: no CA bundle at /etc/ssl/certs/ca-certificates.crt; a certificate error below would be why." >&2
-  fi
+  MISSING_PACKAGES="${MISSING_PACKAGES} ca-certificates"
 fi
 
 if [ -n "${MISSING_PACKAGES}" ]; then
   if ! command -v 'apt-get' >/dev/null 2>&1; then
     # Covered by test/mytool/negative-tests.md, Case D.
-    echo "${FEATURE_ID}: the following are required but missing, and apt-get is unavailable to install them:${MISSING_PACKAGES}" >&2
-    echo "${FEATURE_ID}: install them in your base image, or use a Debian/Ubuntu-based image." >&2
+    echo "${FEATURE_ID}: a dependency has to be installed, but apt-get is not available. Use a Debian- or Ubuntu-based image." >&2
     exit 1
   fi
   apt-get update -y

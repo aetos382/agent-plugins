@@ -55,18 +55,6 @@ jobs:
           printf 'Checking %s\n' "${files[@]}"
           shellcheck -- "${files[@]}"
 
-  # Release numbers, image names, and architectures in dev-container-feature-development must agree
-  # with its source of truth, within the scope that check-supported-platforms.sh describes. Whether
-  # that source is current upstream is not checked here, so that a new upstream release does not
-  # fail unrelated pull requests.
-  platforms:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.1
-
-      - name: "Check supported platforms for consistency"
-        run: bash .github/scripts/check-supported-platforms.sh
-
   # Lints this repository's workflows and the workflow templates that plugins ship. actionlint also
   # runs ShellCheck, which its image includes, on the Bash embedded in run steps; the shellcheck job
   # above sees only *.sh files. The image is pinned by digest and updated by hand. It comes from the
@@ -165,7 +153,6 @@ jobs:
     needs:
       - plugin-validate
       - shellcheck
-      - platforms
       - actionlint
       - renovate-config
       - actions-lock
@@ -174,7 +161,6 @@ jobs:
         run: |
           test '${{ needs.plugin-validate.result }}' = success \
             && test '${{ needs.shellcheck.result }}' = success \
-            && test '${{ needs.platforms.result }}' = success \
             && test '${{ needs.actionlint.result }}' = success \
             && test '${{ needs.renovate-config.result }}' = success \
             && test '${{ needs.actions-lock.result }}' = success
