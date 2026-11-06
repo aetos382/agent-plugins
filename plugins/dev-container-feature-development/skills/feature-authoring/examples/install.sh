@@ -10,8 +10,8 @@ REPOSITORY='example-org/mytool'
 # Option values reach install.sh as upper-cased environment variables.
 VERSION="${VERSION:-latest}"
 
-# Recorded before 'latest' is resolved: only a version the user named is a promise the installed
-# binary can be held to.
+# Recorded before 'latest' is resolved: only a version the Feature user named is a promise the
+# installed binary can be held to.
 VERSION_PINNED='1'
 if [ "${VERSION}" = 'latest' ]; then
   VERSION_PINNED=''

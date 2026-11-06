@@ -26,7 +26,7 @@ Summary of the [Dev Container Features specification](https://containers.dev/imp
 | `installsAfter` | string[] | Soft ordering: only affects Features that are already being installed. IDs without version tags. |
 | `legacyIds` | string[] | Previous IDs, for renaming within one namespace. |
 | `deprecated` | boolean | Marks the Feature as deprecated. |
-| `onCreateCommand`, `updateContentCommand`, `postCreateCommand`, `postStartCommand`, `postAttachCommand` | string, array, or object | Lifecycle hooks. Run from the workspace folder, before the user's own hooks of the same kind. |
+| `onCreateCommand`, `updateContentCommand`, `postCreateCommand`, `postStartCommand`, `postAttachCommand` | string, array, or object | Lifecycle hooks. Run from the workspace folder, before the Feature user's own hooks of the same kind. |
 
 ## Options
 
@@ -48,12 +48,12 @@ Summary of the [Dev Container Features specification](https://containers.dev/imp
 
 - `type` is `string` or `boolean`. Every value arrives in the script as a string; a boolean written correctly arrives as `true` or `false`.
 - `enum` lists the values of a closed set; `proposals` suggests values for an open one. Use one or the other.
-- The CLI enforces neither `type` nor `enum`. It merges what the user wrote over the defaults and passes the result on, without an error or a warning: `"True"` for a boolean option, or a value that `enum` does not list, reaches `install.sh` as written. Neither property affects the build: they feed editors (completion and diagnostics) and the generated README, so `install.sh` has to validate every option itself; see "Validating options" in `install-script.md`.
+- The CLI enforces neither `type` nor `enum`. It merges what the Feature user wrote over the defaults and passes the result on, without an error or a warning: `"True"` for a boolean option, or a value that `enum` does not list, reaches `install.sh` as written. Neither property affects the build: they feed editors (completion and diagnostics) and the generated README, so `install.sh` has to validate every option itself; see "Validating options" in `install-script.md`.
 - The CLI writes each value unescaped into an env file as `NAME="value"`, and a shell reads that file. A `"`, a `$(...)`, or a backquote in a value is therefore interpreted by the shell before `install.sh` sees it. This crosses no security boundary, because whoever writes `devcontainer.json` already controls the build, but it means that such a value does not arrive literally.
 - The option ID becomes the environment variable: non-word characters are replaced with `_`, leading digits and underscores are replaced with `_`, and the result is upper-cased. `installCompletions` → `INSTALLCOMPLETIONS`.
-- Every option is exported, with its default when the user did not set it.
-- A user may write `"ghcr.io/<owner>/<repo>/<id>": "1.2"` as a shorthand for `{ "version": "1.2" }`. Name the version option `version` so this works.
-- Never take secrets as options. Option values are committed in the user's `devcontainer.json`, appear in build logs, and are written to `devcontainer-features.env`, which can persist in an image layer depending on how the image is built.
+- Every option is exported, with its default when the Feature user did not set it.
+- A Feature user may write `"ghcr.io/<owner>/<repo>/<id>": "1.2"` as a shorthand for `{ "version": "1.2" }`. Name the version option `version` so this works.
+- Never take secrets as options. Option values are committed in the Feature user's `devcontainer.json`, appear in build logs, and are written to `devcontainer-features.env`, which can persist in an image layer depending on how the image is built.
 
 ## User variables available to install.sh
 
@@ -61,20 +61,20 @@ Summary of the [Dev Container Features specification](https://containers.dev/imp
 |---|---|
 | `_REMOTE_USER` | `remoteUser` from the configuration or image metadata; falls back to `_CONTAINER_USER`. |
 | `_REMOTE_USER_HOME` | Home directory of `_REMOTE_USER`. |
-| `_CONTAINER_USER` | The container's user (`containerUser`, `USER`, or the base image's user). |
+| `_CONTAINER_USER` | The account the container runs as (`containerUser`, `USER`, or the base image's user). |
 | `_CONTAINER_USER_HOME` | Home directory of `_CONTAINER_USER`. |
 
 ## Install order
 
 1. `dependsOn` is resolved recursively, and each dependency is installed before the dependent Feature. Dependencies with different options count as different Features.
 2. `installsAfter` only reorders Features that are already queued. It never adds a Feature.
-3. The user's `overrideFeatureInstallOrder` can pull Features forward but cannot violate the graph above.
+3. The Feature user's `overrideFeatureInstallOrder` can pull Features forward but cannot violate the graph above.
 
 Prefer `installsAfter` for "run after `common-utils` if it is there" relationships. Use `dependsOn` only when the Feature cannot work at all without the other Feature, and document it in `NOTES.md`, since it changes what gets installed.
 
 ## Versioning rules
 
-Choose the bump from the effect on existing users:
+Choose the bump from the effect on existing Feature users:
 
 - **Major**: an option removed or its meaning changed; a changed install path, volume name, or mount target; a new `dependsOn`; any change after which an existing configuration behaves differently or loses data.
 - **Minor**: a new option, new supported platform, new warnings or detection, all backward-compatible.

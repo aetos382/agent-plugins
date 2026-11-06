@@ -51,6 +51,13 @@ Claude Code のプラグインを配布するマーケットプレイス。
 - プラグイン利用者: プラグインをインストールして、自分のリポジトリで使う人。
 - Feature 利用者: `dev-container-feature-development` で作った Dev Container Feature を、`devcontainer.json` に書いて使う人。
 
+英語の文書（プラグインに同梱して配布する文書とコードのコメント）では、次の語で呼び分ける。「the user」を、Claude に作業を頼んでいる人以外に使わない。
+
+- the user: Claude に作業を頼んでいる人。日本語の文書の「ユーザー」にあたる。
+- Feature user: Feature 利用者。「the Feature user's `devcontainer.json`」「existing Feature users」のように使う。
+- the remote user、the container user: コンテナーの OS のアカウント。それぞれ `_REMOTE_USER` と `_CONTAINER_USER` が指すアカウントである。「non-root user」「vscode user」のように、アカウントの話だと文脈で分かる語はそのまま使ってよい。
+- maintainer: ワークフローの雛形のコメントなどで、Claude を介さずに Features リポジトリを運用する人を指すとき。
+
 ## ソース管理
 
 `main` ブランチにはコミットしない。機能開発は適当なトピック ブランチで行う。

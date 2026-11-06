@@ -50,7 +50,7 @@ Dependabot or Renovate keeps the pinned actions and the dev container's Features
 
 1. **The repository already uses one.** Keep it and do not add the other. A `dependabot.yml` that covers only the `devcontainers` ecosystem next to a Renovate configuration counts as Renovate.
 2. **The user's instructions name one**, for example in `CLAUDE.md` or memory. Follow them, including any shared Renovate preset they name.
-3. **Otherwise, ask** with `AskUserQuestion`. Recommend Dependabot: it is built into GitHub and needs no app installation. Offer Renovate for users who already run it elsewhere.
+3. **Otherwise, ask** with `AskUserQuestion`. Recommend Dependabot: it is built into GitHub and needs no app installation. Offer Renovate in case the user already runs it elsewhere.
 
 ## 3. Resolve template values
 
