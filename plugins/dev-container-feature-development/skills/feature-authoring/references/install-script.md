@@ -14,7 +14,7 @@ FEATURE_ID='mytool'
 VERSION="${VERSION:-latest}"
 ```
 
-Keep the defaults identical to those in `devcontainer-feature.json`. The CLI always exports every option, so the fallback applies only when the user set an option to an empty value, and when the script is run directly (for example in negative tests).
+Keep the defaults identical to those in `devcontainer-feature.json`. The CLI always exports every option, so the fallback applies only when the Feature user set an option to an empty value, and when the script is run directly (for example in negative tests).
 
 ## Root check
 
@@ -123,7 +123,7 @@ This is the same path as an edit in place that does not find its input (see "Ide
 
 ## Resolving "latest"
 
-First record whether the user named a version, before `latest` is resolved: only a version the user named is a promise the installed binary can be held to (see "Checking the installed version"). Both lookups below assume this block.
+First record whether the Feature user named a version, before `latest` is resolved: only a version the Feature user named is a promise the installed binary can be held to (see "Checking the installed version"). Both lookups below assume this block.
 
 ```sh
 VERSION_PINNED='1'
@@ -171,7 +171,7 @@ esac
 
 ## Validating options
 
-Validate every option, boolean and `enum` options included. The CLI does not enforce `type` or `enum` at build time (see `feature-json.md`), so a typo in the user's `devcontainer.json` reaches the script as written, and the script is the only place that can reject it. Fail on an invalid value; never treat it as false or as the default. The one exception is an empty value, which the `${VAR:-default}` read in the header replaces with the default.
+Validate every option, boolean and `enum` options included. The CLI does not enforce `type` or `enum` at build time (see `feature-json.md`), so a typo in the Feature user's `devcontainer.json` reaches the script as written, and the script is the only place that can reject it. Fail on an invalid value; never treat it as false or as the default. The one exception is an empty value, which the `${VAR:-default}` read in the header replaces with the default.
 
 A boolean accepts `true` and `false` only. Without the check, a test such as `[ "${INSTALLCOMPLETIONS}" = 'true' ]` silently treats `True` as false:
 
@@ -197,7 +197,7 @@ case "${CHANNEL}" in
 esac
 ```
 
-Validate a free-form option before it reaches a URL, a path, or a command. Check the resolved value, not only the user's input, since a `latest` lookup can return something unexpected too. Allow only the characters the value can legitimately contain:
+Validate a free-form option before it reaches a URL, a path, or a command. Check the resolved value, not only the Feature user's input, since a `latest` lookup can return something unexpected too. Allow only the characters the value can legitimately contain:
 
 ```sh
 case "${VERSION}" in
@@ -278,7 +278,7 @@ install -o 'root' -g 'root' -m 755 "${TMP_DIR}/mytool" '/usr/local/bin/mytool'
 
 ## Per-user setup
 
-`_REMOTE_USER` is the user the dev container will be used as; `_CONTAINER_USER` is the container's user. Their homes are in `_REMOTE_USER_HOME` and `_CONTAINER_USER_HOME`. They can be empty when the script is run by hand, so fall back explicitly.
+`_REMOTE_USER` is the account the dev container will be used as (the remote user); `_CONTAINER_USER` is the account the container runs as (the container user). Their homes are in `_REMOTE_USER_HOME` and `_CONTAINER_USER_HOME`. They can be empty when the script is run by hand, so fall back explicitly.
 
 ```sh
 TARGET_USER="${_REMOTE_USER:-root}"
@@ -296,8 +296,8 @@ if [ -z "${TARGET_HOME}" ] || [ ! -d "${TARGET_HOME}" ]; then
 fi
 TARGET_GROUP="$(id -gn "${TARGET_USER}")"
 
-# Each missing level is created owned by the user. mkdir -p would leave ~/.config owned by root when
-# it did not exist yet, and the user could then create nothing else in it.
+# Each missing level is created owned by the remote user. mkdir -p would leave ~/.config owned by
+# root when it did not exist yet, and the remote user could then create nothing else in it.
 for dir in "${TARGET_HOME}/.config" "${TARGET_HOME}/.config/mytool"; do
   if [ ! -d "${dir}" ]; then
     install -d -o "${TARGET_USER}" -g "${TARGET_GROUP}" -m 755 "${dir}"
@@ -308,7 +308,7 @@ install -o "${TARGET_USER}" -g "${TARGET_GROUP}" -m 644 "${SCRIPT_DIR}/config.to
 
 `SCRIPT_DIR` is the Feature directory; see "Files next to install.sh" below.
 
-Run commands as the user with `su -s /bin/sh "${TARGET_USER}" -c '...'` rather than `sudo`, which may not be installed. `-s` matters for system users whose login shell is `nologin`. Only `chown` what this script created; a recursive `chown` on the whole home can take ownership away from files that other Features placed there on purpose.
+Run commands as the remote user with `su -s /bin/sh "${TARGET_USER}" -c '...'` rather than `sudo`, which may not be installed. `-s` matters for system users whose login shell is `nologin`. Only `chown` what this script created; a recursive `chown` on the whole home can take ownership away from files that other Features placed there on purpose.
 
 ## Files next to install.sh
 
@@ -325,8 +325,8 @@ A script referenced by `entrypoint` or a lifecycle hook in `devcontainer-feature
 
 A Feature is installed twice on one image more often than it seems:
 
-- The base image was prebuilt with the Feature, and the user lists it again. The CLI runs it again even when the options are the same, and the user's entry runs last.
-- Another Feature pulls it in through `dependsOn`, and the user lists it too with other options or another version. Both run. Neither the Feature nor the user controls which runs last: the user's entry can run first. With the same version and options, the CLI runs it once.
+- The base image was prebuilt with the Feature, and the Feature user lists it again. The CLI runs it again even when the options are the same, and the Feature user's entry runs last.
+- Another Feature pulls it in through `dependsOn`, and the Feature user lists it too with other options or another version. Both run. Neither the Feature nor the Feature user controls which runs last: the Feature user's entry can run first. With the same version and options, the CLI runs it once.
 - The duplicate test.
 
 A second run must not fail, and must not damage what the first left. Beyond that, what it yields depends on what the script touches, and one script can mix the cases:
@@ -351,7 +351,7 @@ An edit in place looks for something to replace, and a second run may not find i
 - Never apply part of an edit. Decide what to change before changing anything.
 - Describe this in `NOTES.md` Limitations.
 
-Do not record earlier runs (a marker file, a backup of the original) in order to undo them. That adds a state that can disagree with the real configuration, for a case in which the user gets a warning either way.
+Do not record earlier runs (a marker file, a backup of the original) in order to undo them. That adds a state that can disagree with the real configuration, for a case in which the Feature user gets a warning either way.
 
 ### Testing
 

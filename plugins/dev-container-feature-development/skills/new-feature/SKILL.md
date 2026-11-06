@@ -30,7 +30,7 @@ Then ask, with `AskUserQuestion`, about what remains open. Typical questions:
 
 1. **ID and name**: propose a lowercase, hyphenated ID that does not collide with an existing `src/<id>`. `global` is reserved: its job would be named `test-global`, the name of the job for the global scenarios.
 2. **Install method**: recommend a download of a verified release artifact over an apt repository or a piped install script. An apt repository lets `apt-get upgrade` move a pinned version, and an unverified install script runs whatever the server returns.
-3. **Options**: `version` (with `latest`) is almost always right. Propose others only for behavior users will plausibly want to change.
+3. **Options**: `version` (with `latest`) is almost always right. Propose others only for behavior Feature users will plausibly want to change.
 4. **Per-user behavior**: whether the Feature configures anything for `_REMOTE_USER`.
 5. **Architectures**: ask only when the upstream publishes no build for one of the architectures the repository supports, and confirm that the Feature leaves that architecture out, as the `feature-authoring` skill allows. Otherwise the Feature supports all of them without asking. Other architectures are not offered, because CI cannot test them.
 
@@ -48,7 +48,7 @@ Create, following the `feature-authoring` skill:
 Then the tests, following the `feature-testing` skill:
 
 - `test/<id>/test.sh` for the default options.
-- `test/<id>/scenarios.json` with at least one scenario: a scenario per behavior-changing option value, a `non_root_user` scenario when anything touches a user's environment, and, when the Feature installs dependencies, a bare-image scenario that exercises that installation. When none of these applies, write the `non_root_user` scenario anyway, as "What to cover" in the `feature-testing` skill describes. Spread scenarios across the releases of the `baseImage` matrix.
+- `test/<id>/scenarios.json` with at least one scenario: a scenario per behavior-changing option value, a `non_root_user` scenario when anything touches the remote user's environment, and, when the Feature installs dependencies, a bare-image scenario that exercises that installation. When none of these applies, write the `non_root_user` scenario anyway, as "What to cover" in the `feature-testing` skill describes. Spread scenarios across the releases of the `baseImage` matrix.
 - `test/<id>/duplicate.sh` when options change what gets installed or configured, unless the duplicate test cannot exercise the Feature (see "What to cover" in the `feature-testing` skill).
 - `test/<id>/negative-tests.md` for every failure path in `install.sh` that tests cannot express.
 

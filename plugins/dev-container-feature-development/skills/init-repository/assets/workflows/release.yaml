@@ -51,7 +51,7 @@ jobs:
             echo 'No documentation updates.'
           else
             # Do not add "[skip ci]": branch rules that require a status check would never be
-            # satisfied. Events caused by GITHUB_TOKEN do not start workflow runs either, so a user has
+            # satisfied. Events caused by GITHUB_TOKEN do not start workflow runs either, so a maintainer has
             # to close and reopen the pull request below before its checks are reported.
             git commit -m "${message}"
             git push origin "${branch}"

@@ -66,7 +66,7 @@ Do not skip the "Awaiting publish" check. When this skill is rerun after a bump 
 
 Propose a bump for each Feature from its changes, using these criteria, and **wait for the user to confirm**:
 
-- **Major**: existing users' configuration behaves differently or loses data. Removed options or changed meaning; changed install paths, volume names, or mount targets; a new `dependsOn`.
+- **Major**: existing Feature users' configuration behaves differently or loses data. Removed options or changed meaning; changed install paths, volume names, or mount targets; a new `dependsOn`.
 - **Minor**: backward-compatible additions. New options, new warnings or detection, broader platform support.
 - **Patch**: bug fixes and documentation-only changes.
 
