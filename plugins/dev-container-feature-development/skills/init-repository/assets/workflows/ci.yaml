@@ -69,10 +69,10 @@ jobs:
   # need no change whenever a job is added or renamed. Every job above must be listed under needs: one
   # that is missing can fail while this check still passes.
   #
-  # Do not rename this job or give it a name: key. The dev-container-feature-development plugin finds
-  # it by the job ID ci-passed, and branch rules that require this check refer to it by that ID. Do
-  # not give a job of another workflow the same ID either: two checks of the same name make a
-  # required check ambiguous.
+  # Do not rename this job or give it a name: key: its check is then named ci-passed, which is how the
+  # dev-container-feature-development plugin finds it and how branch rules that require it refer to
+  # it. No job of another workflow may have the ID or the name ci-passed either: two checks of the
+  # same name make a required check ambiguous.
   ci-passed:
     runs-on: ubuntu-latest
     if: always()
