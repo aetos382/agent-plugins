@@ -56,7 +56,7 @@ Make `install.sh` and every test script executable, so that they can be run dire
 
 Also update:
 
-- The CI workflow (usually `.github/workflows/ci.yaml`): add a `test-<id>` job with the architectures agreed above, and add it to `needs` of the workflow's aggregate job, whatever its name, as the "Test jobs" section of the `feature-testing` skill describes. Without the job, CI does not test the Feature, and nothing in CI reports it. Do not add an aggregate job here. When the repository has no CI workflow of this plugin and the user chose to continue, do not edit any workflow, even one that tests the other Features: tell the user that CI does not test the new Feature until `init-repository` has created the CI workflow.
+- The CI workflow (usually `.github/workflows/ci.yaml`): add a `test-<id>` job with the architectures agreed above, and add it to `needs` of the workflow's aggregate job `ci-passed`, as the "Test jobs" section of the `feature-testing` skill describes. Without the job, CI does not test the Feature, and nothing in CI reports it. Do not add an aggregate job here. When the repository has no CI workflow of this plugin and the user chose to continue, do not edit any workflow, even one that tests the other Features: tell the user that CI does not test the new Feature until `init-repository` has created the CI workflow.
 - The Features table in the root `README.md`, when there is one.
 
 Run `shellcheck` on every new script when it is available and fix what it reports.
