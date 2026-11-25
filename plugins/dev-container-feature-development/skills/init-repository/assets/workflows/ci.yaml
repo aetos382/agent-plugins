@@ -1,4 +1,4 @@
-# Do not edit, move, or remove the next line. The dev-container-feature-development plugin
+# Do not edit or remove the next line. The dev-container-feature-development plugin
 # recognizes the workflow it manages by that line, whatever the name of this file.
 # dev-container-feature-development: ci
 name: "CI"
@@ -69,10 +69,11 @@ jobs:
   # need no change whenever a job is added or renamed. Every job above must be listed under needs: one
   # that is missing can fail while this check still passes.
   #
-  # Do not rename this job or give it a name: key: its check is then named ci-passed, which is how the
-  # dev-container-feature-development plugin finds it and how branch rules that require it refer to
-  # it. No job of another workflow may have the ID or the name ci-passed either: two checks of the
-  # same name make a required check ambiguous.
+  # Keep the job ID `ci-passed`, and do not add a `name` key to this job. The check is then named
+  # `ci-passed`. The dev-container-feature-development plugin finds this job by that name, and branch
+  # rules that require this check refer to it by that name. No job of another workflow may have the
+  # ID or the `name` `ci-passed` either, since two checks of the same name make a required check
+  # ambiguous.
   ci-passed:
     runs-on: ubuntu-latest
     if: always()

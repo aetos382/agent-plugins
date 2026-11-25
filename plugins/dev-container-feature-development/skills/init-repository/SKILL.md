@@ -21,25 +21,12 @@ Reply to the user in the language they use. This skill writes files in the worki
    | Reusable test | starts only on `workflow_call`, and runs `devcontainer features test` |
    | Release | uses `devcontainers/action` with `publish-features: "true"` |
 
-   The CI workflow is recognized by that line alone: `grep -lxF '# dev-container-feature-development: ci' .github/workflows/*`. A workflow without it is not the CI workflow, even when it runs the same tests and checks; that includes the `test.yaml` and `validate.yaml` that earlier versions of this plugin wrote. Leave those workflows and their aggregate jobs as they are. Record the ones that start on `push` or `pull_request` and run `devcontainer features test` or call a reusable workflow that does, use `devcontainers/action` with `validate-only: "true"`, or run `shellcheck`: they duplicate the CI workflow.
+   The CI workflow is recognized by that line alone: `grep -lxF '# dev-container-feature-development: ci' .github/workflows/*`. A workflow without it is not the CI workflow, even when it runs the same tests and checks. Leave those workflows and their aggregate jobs as they are. Record the ones that start on `push` or `pull_request` and run `devcontainer features test` or call a reusable workflow that does, use `devcontainers/action` with `validate-only: "true"`, or run `shellcheck`: they duplicate the CI workflow.
 
    - **One workflow has the line.** It is the CI workflow.
    - **Several have it.** Stop and tell the user which ones. This plugin manages exactly one.
    - **None has it, and `.github/workflows/` holds no workflow.** The CI workflow is to be created.
-   - **None has it, but workflows exist.** The line may have been lost from one of them. Do not ask the user; look in the Git history, first at the default file name and then at every workflow:
-
-     ```bash
-     mark='# dev-container-feature-development: ci'
-     git rev-parse --is-shallow-repository
-     git grep -l -F -e "${mark}" HEAD -- .github/workflows
-     git log --format='%h %ad %s' --date=short --name-status -S"${mark}" -- .github/workflows/ci.yaml .github/workflows/ci.yml
-     git log --format='%h %ad %s' --date=short --name-status -S"${mark}" -- .github/workflows
-     ```
-
-     `git grep` finds a line that was removed without being committed. `git log -S` lists the commits that added or removed the line, also in files that were deleted since; follow a renamed file with `git log --follow`.
-     - **A workflow that still exists had the line.** It is the CI workflow, and its line was lost. Plan to put the line back at the top of that file, with the comment above it as the template writes them, and name in the plan the commit that removed it. When several qualify, take `ci.yaml` or `ci.yml` if it is one of them, otherwise the one that lost the line last, and say so in the plan.
-     - **No file ever had the line, or only files that no longer exist did.** The CI workflow is to be created. Say in the plan that no workflow was recognized as the CI workflow, so that the user confirms the creation by approving the plan.
-     - **The repository is a shallow clone** (`true` from the first command) and the history shows nothing: the result is not conclusive. Say so in the plan; creating the CI workflow remains the default.
+   - **None has it, but workflows exist.** The line may have been lost from one of them. When the survey recorded workflows that duplicate the CI workflow, ask the user with `AskUserQuestion` whether one of them is the CI workflow of this plugin that lost its line, offering each of them and, as the recommended choice, creating the CI workflow. When the user names one, it is the CI workflow: plan to put the line back at the top of that file, with the comment above it as the template writes them. Otherwise, or when no workflow duplicates the CI workflow, the CI workflow is to be created.
 
    Also check `src/*/devcontainer-feature.json`, `test/*/`, `.devcontainer/devcontainer.json`, `README.md`, `LICENSE`, and `.gitattributes`.
 4. Record how dependencies are updated: `.github/dependabot.yml`, and a Renovate configuration in any of the locations Renovate reads (`renovate.json`, `renovate.json5`, `.github/renovate.json`, `.github/renovate.json5`, `.gitlab/renovate.json`, `.gitlab/renovate.json5`, `.renovaterc`, `.renovaterc.json`, `.renovaterc.json5`, or a `renovate` key in `package.json`).
@@ -128,7 +115,7 @@ The CI workflow holds the jobs this plugin manages (`validate`, `shellcheck`, an
 
 - **A job of another workflow has the ID `ci-passed`, or a `name:` of `ci-passed`.** Stop and tell the user which one. Checks with the same name from two workflows make a required status check ambiguous and can block merging. Renaming that job is the user's decision; continue once it no longer collides.
 - **The CI workflow has `ci-passed`.** Keep its ID. When it has a `name:` key, plan to remove it, and tell the user that the check is then named `ci-passed`, so a ruleset that requires the old name must be changed.
-- **The CI workflow has no `ci-passed`.** Follow "Migrating from version 0.6 and earlier" below first. When it finds no aggregate job, plan `ci-passed` as the template writes it.
+- **The CI workflow has no `ci-passed`.** Plan `ci-passed` as the template writes it.
 
 Replace the comment above `ci-passed` with the template's.
 
@@ -144,7 +131,7 @@ The architectures that the rest of this section calls supported are the keys of 
 
 When an existing job leaves out a supported architecture, list the job and the architecture in the plan as information, without changing the job, so that the user can decide separately whether to extend the Feature. When an existing job names an architecture that is not supported, report it: `test-feature.yaml` fails that job.
 
-Choose the architectures of each new job as follows. When the repository has `test/<id>/architectures` and `test/_global/architectures` files, which an earlier version of this plugin read, take each job's architectures from its file, one name per line, and plan to delete the files; point out any name that is not a supported architecture. Otherwise, propose them from the supported architectures, narrowed by what the Feature can install on each:
+Choose the architectures of each new job as follows. Propose them from the supported architectures, narrowed by what the Feature can install on each:
 
 - When `install.sh` branches on `uname -m`, keep the supported architectures that the branches accept, and point out any that they reject, since the Feature is then not tested on it.
 - When it does not branch, the Feature is architecture-independent as far as the script goes; start from all supported architectures.
@@ -195,10 +182,3 @@ These need repository admin rights or are deliberately left to the user. Present
 6. **After the first release**: ghcr.io creates packages private. Make each one public at `https://github.com/<users|orgs>/<owner>/packages/container/<repo>%2F<id>/settings` (with a custom `features-namespace`, the package name is the namespace without the owner, then `/<id>`). The `release` skill reminds about this too.
 
 Finally, suggest committing the changes on a topic branch and opening a pull request, and offer the `new-feature` skill when `src/` is empty.
-
-## Migrating from version 0.6 and earlier
-
-Version 0.6 and earlier of this plugin let the aggregate job of the CI workflow have any ID, and marked it with the line `# dev-container-feature-development: aggregate job` directly above its ID. Bring such a repository in line as follows, as part of the plan of step 4:
-
-- **The CI workflow has no `ci-passed`.** Take the job under that line as the aggregate job; without the line, take the job that runs with `if: always()` and fails unless every job under its `needs` succeeded, and ask the user when more than one qualifies. Plan to rename it to `ci-passed` and to remove any `name:` key. Tell the user that a ruleset that requires the old name must be changed to require `ci-passed`, and add that to the branch rules of step 6; this skill does not change rulesets.
-- **The line is in the CI workflow.** Plan to remove it wherever it is, together with the comment above it that tells readers to leave it alone. After applying the plan, confirm that the line is gone.
